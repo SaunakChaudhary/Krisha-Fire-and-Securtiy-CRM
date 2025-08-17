@@ -1,0 +1,92 @@
++-----------------------+
+| 1) Users Add          |
+| (Admin/Sales/Engr)    |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| 2) Customers Add      |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| 3) Sites Add          |
+| (Address/Contacts)    |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| 4) Sales Enquiry      |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| 5) Quotation          |
+|   -> Send to Client   |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| 6) Quotation WON ?    |
++-----------+-----------+
+   Yes |             | No
+       |             v
+       |      [Stop / Follow-up]
+       v
++-------------------------------+
+| 7) Job Costing                |
++---------------+---------------+
+                |
+                v
++-------------------------------+
+| 8) Add Systems to Site        |
+| (Type, Install Date, Warranty)|
++---------------+---------------+
+                |
+                v
++-------------------------------+
+| 9) Raise Call (Task)          |
+|  - Select Site                |
+|  - Select System (from site)  |
+|  - Select Reason              |
++-----+-------------------+-----+
+      |                   |
+      |                   |
+      |                   |
+      v                   v
++-----------+       +------------+
+|Reason:    |       |Reason:     |
+|Installn   |       |Service     |
++-----+-----+       +------+-----+
+      |                    |
+      v                    v
++-----+--------------------+-------------------------------+
+| 10) For Service Reason:                                |
+|     Check Warranty / AMC                               |
+|     - If Warranty Active  -> FREE                      |
+|     - Else If AMC Active  -> FREE                      |
+|     - Else -> CHARGEABLE (Offer AMC/Renewal prompt)    |
++--------------------+--------------------+--------------+
+                     |                    |
+                 FREE path            CHARGEABLE path
+                     |                    |
+                     v                    v
+              +------+-----+        +-----+------+
+              | Assign     |        | Assign     |
+              | Engineer   |        | Engineer   |
+              +------+-----+        +-----+------+
+                     \                /
+                      \              /
+                       v            v
+                 +----------------------+
+                 |  Engineer Execution  |
+                 |  - Status updates    |
+                 |  - Signature/Review  |
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 |  Admin Diary/Tracking|
+                 |  - Who/When/Where    |
+                 |  - History           |
+                 +----------------------+
