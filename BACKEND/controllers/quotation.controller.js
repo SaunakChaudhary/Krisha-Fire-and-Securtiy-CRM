@@ -4,11 +4,12 @@ const Customer = require("../models/customer.model");
 const Site = require("../models/site.model");
 const System = require("../models/system.model");
 const Product = require("../models/product.model");
+const SalesEnquiry = require("../models/sales_enquiry.model");
 
 // Create a new quotation
 exports.createQuotation = async (req, res) => {
   try {
-    const { company_id, customer_id, site_id, product_details } = req.body;
+    const { company_id, customer_id, site_id, product_details, system_details, sales_enquiry_id } = req.body;
 
     // Validation (your existing checks)
     if (!company_id || !customer_id || !site_id) {
@@ -48,17 +49,75 @@ exports.createQuotation = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Site not found" });
 
-    if (req.body.system_details) {
-      const systemExists = await System.findById(req.body.system_details);
+    if (system_details) {
+      const systemExists = await System.findById(system_details);
       if (!systemExists)
         return res
           .status(404)
           .json({ success: false, message: "System not found" });
     }
 
-    // Product validations (same as your loop)...
+    // Optional: sales enquiry validation
+    if (sales_enquiry_id) {
+      const salesEnquiryExists = await SalesEnquiry.findById(sales_enquiry_id);
+      if (!salesEnquiryExists) {
+        return res.status(404).json({ success: false, message: "Sales enquiry not found" });
+      }
+    }
+
+    // Product validations and server-side amount calculations
+    const sanitizedProducts = [];
     for (const product of product_details) {
-      // (keep your existing checks here)
+      if (!product.product_id || product.quantity == null || product.price == null) {
+        return res.status(400).json({
+          success: false,
+          message: "Each product must include product_id, quantity, and price",
+        });
+      }
+
+      const productExists = await Product.findById(product.product_id);
+      if (!productExists) {
+        return res.status(404).json({
+          success: false,
+          message: `Product with ID ${product.product_id} not found`,
+        });
+      }
+
+      const quantity = Number(product.quantity);
+      const price = Number(product.price);
+      const gstPercent = Number(product.gst_percent || 0);
+      const installationPrice = Number(product.installation_price || 0);
+      const installationGstPercent = Number(product.installation_gst_percent || 0);
+
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return res.status(400).json({ success: false, message: "Quantity must be a positive number" });
+      }
+      if (!Number.isFinite(price) || price < 0) {
+        return res.status(400).json({ success: false, message: "Price must be a non-negative number" });
+      }
+      if (gstPercent < 0 || gstPercent > 100) {
+        return res.status(400).json({ success: false, message: "GST percent must be between 0 and 100" });
+      }
+      if (installationGstPercent < 0 || installationGstPercent > 100) {
+        return res.status(400).json({ success: false, message: "Installation GST percent must be between 0 and 100" });
+      }
+
+      const totalAmount = quantity * price;
+      const installationAmount = quantity * installationPrice;
+
+      sanitizedProducts.push({
+        product_id: product.product_id,
+        description: product.description || "",
+        manufacturer: product.manufacturer || "",
+        gst_percent: gstPercent,
+        quantity,
+        price,
+        total_amount: totalAmount,
+        installation_price: installationPrice,
+        installation_gst_percent: installationGstPercent,
+        installation_amount: installationAmount,
+        narration: product.narration || "",
+      });
     }
 
     // ======== Generate Unique Quotation ID ========
@@ -75,10 +134,34 @@ exports.createQuotation = async (req, res) => {
     const newNumber = (countForToday + 1).toString().padStart(4, "0"); // 0001
     const quotation_id = `QTN-${dateStr}-${newNumber}`;
 
+    // Merge include_in_pdf with defaults
+    const defaultPdf = {
+      sr_no: true,
+      item_description: true,
+      part_code: true,
+      make: true,
+      quantity: true,
+      unit: true,
+      gst_percent: true,
+      specification: true,
+    };
+
+    const includeInPdf = {
+      ...defaultPdf,
+      ...(req.body.include_in_pdf || {}),
+    };
+
     // Create the quotation
     const quotation = new Quotation({
-      ...req.body,
-      quotation_id, // attach the generated ID
+      quotation_id,
+      company_id,
+      customer_id,
+      site_id,
+      sales_enquiry_id: sales_enquiry_id || undefined,
+      system_details: system_details || undefined,
+      terms_and_conditions: req.body.terms_and_conditions || "",
+      include_in_pdf: includeInPdf,
+      product_details: sanitizedProducts,
     });
 
     await quotation.save();
@@ -103,6 +186,7 @@ exports.getAllQuotations = async (req, res) => {
       .populate("company_id")
       .populate("customer_id")
       .populate("site_id")
+      .populate("sales_enquiry_id")
       .populate("system_details")
       .populate("product_details.product_id");
 
@@ -125,6 +209,7 @@ exports.getQuotationById = async (req, res) => {
       .populate("company_id")
       .populate("customer_id")
       .populate("site_id")
+      .populate("sales_enquiry_id")
       .populate("system_details")
       .populate("product_details.product_id");
 
@@ -191,6 +276,13 @@ exports.updateQuotation = async (req, res) => {
       }
     }
 
+    if (req.body.sales_enquiry_id) {
+      const salesEnquiryExists = await SalesEnquiry.findById(req.body.sales_enquiry_id);
+      if (!salesEnquiryExists) {
+        return res.status(404).json({ success: false, message: "Sales enquiry not found" });
+      }
+    }
+
     // Validate product_details if being updated
     if (req.body.product_details) {
       if (
@@ -203,17 +295,12 @@ exports.updateQuotation = async (req, res) => {
         });
       }
 
+      const sanitizedProducts = [];
       for (const product of req.body.product_details) {
-        if (
-          !product.product_id ||
-          !product.quantity ||
-          !product.price ||
-          !product.total_amount
-        ) {
+        if (!product.product_id || product.quantity == null || product.price == null) {
           return res.status(400).json({
             success: false,
-            message:
-              "Each product must have product_id, quantity, price, and total_amount",
+            message: "Each product must include product_id, quantity, and price",
           });
         }
 
@@ -225,72 +312,44 @@ exports.updateQuotation = async (req, res) => {
           });
         }
 
-        // Validate numeric fields
-        if (isNaN(product.quantity) || product.quantity <= 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Quantity must be a positive number",
-          });
+        const quantity = Number(product.quantity);
+        const price = Number(product.price);
+        const gstPercent = Number(product.gst_percent || 0);
+        const installationPrice = Number(product.installation_price || 0);
+        const installationGstPercent = Number(product.installation_gst_percent || 0);
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          return res.status(400).json({ success: false, message: "Quantity must be a positive number" });
+        }
+        if (!Number.isFinite(price) || price < 0) {
+          return res.status(400).json({ success: false, message: "Price must be a non-negative number" });
+        }
+        if (gstPercent < 0 || gstPercent > 100) {
+          return res.status(400).json({ success: false, message: "GST percent must be between 0 and 100" });
+        }
+        if (installationGstPercent < 0 || installationGstPercent > 100) {
+          return res.status(400).json({ success: false, message: "Installation GST percent must be between 0 and 100" });
         }
 
-        if (isNaN(product.price) || product.price < 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Price must be a non-negative number",
-          });
-        }
+        const totalAmount = quantity * price;
+        const installationAmount = quantity * installationPrice;
 
-        if (isNaN(product.total_amount) || product.total_amount < 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Total amount must be a non-negative number",
-          });
-        }
-
-        if (
-          (product.gst_percent && isNaN(product.gst_percent)) ||
-          product.gst_percent < 0 ||
-          product.gst_percent > 100
-        ) {
-          return res.status(400).json({
-            success: false,
-            message: "GST percent must be between 0 and 100",
-          });
-        }
-
-        if (
-          product.installation_price &&
-          (isNaN(product.installation_price) || product.installation_price < 0)
-        ) {
-          return res.status(400).json({
-            success: false,
-            message: "Installation price must be a non-negative number",
-          });
-        }
-
-        if (
-          product.installation_gst_percent &&
-          (isNaN(product.installation_gst_percent) ||
-            product.installation_gst_percent < 0 ||
-            product.installation_gst_percent > 100)
-        ) {
-          return res.status(400).json({
-            success: false,
-            message: "Installation GST percent must be between 0 and 100",
-          });
-        }
-
-        if (
-          product.installation_amount &&
-          (isNaN(product.installation_amount) ||
-            product.installation_amount < 0)
-        ) {
-          return res.status(400).json({
-            success: false,
-            message: "Installation amount must be a non-negative number",
-          });
-        }
+        sanitizedProducts.push({
+          product_id: product.product_id,
+          description: product.description || "",
+          manufacturer: product.manufacturer || "",
+          gst_percent: gstPercent,
+          quantity,
+          price,
+          total_amount: totalAmount,
+          installation_price: installationPrice,
+          installation_gst_percent: installationGstPercent,
+          installation_amount: installationAmount,
+          narration: product.narration || "",
+        });
       }
+
+      req.body.product_details = sanitizedProducts;
     }
 
     const quotation = await Quotation.findByIdAndUpdate(
@@ -304,6 +363,7 @@ exports.updateQuotation = async (req, res) => {
       .populate("company_id")
       .populate("customer_id")
       .populate("site_id")
+      .populate("sales_enquiry_id")
       .populate("system_details")
       .populate("product_details.product_id");
 

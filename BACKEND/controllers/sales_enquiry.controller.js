@@ -145,7 +145,9 @@ const getSalesEnquiryById = async (req, res) => {
       .populate("customer")
       .populate("assignedTo")
       .populate("typeOfWork")
-      .populate("systemType");
+      .populate("systemType")
+      .populate("referealEngineer")
+      .populate("salesPerson");
 
     return res.status(500).json(fetchSalesEnquiry);
   } catch (error) {
@@ -161,7 +163,10 @@ const getSalesEnquiry = async (req, res) => {
       .populate("customer")
       .populate("assignedTo")
       .populate("typeOfWork")
-      .populate("systemType");
+      .populate("systemType")
+      .populate("referealEngineer")
+      .populate("salesPerson")
+      ;
 
     return res.status(500).json(fetchSalesEnquiry);
   } catch (error) {

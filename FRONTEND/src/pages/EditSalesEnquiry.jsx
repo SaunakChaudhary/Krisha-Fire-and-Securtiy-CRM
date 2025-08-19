@@ -17,7 +17,6 @@ const EditSalesEnquiry = () => {
         const fetchLead = async () => {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/sourceLead`)
             const data = await response.json();
-            console.log(data)
             if (response.ok) {
                 setLeads(data)
             } else {
@@ -68,7 +67,7 @@ const EditSalesEnquiry = () => {
         customer: '',
         site: '',
         referealEngineer: '',
-        typeOfWork: '',
+        TypeOfWork: '',
         clientType: 'Contractor',
         premisesType: 'Commercial property',
         systemType: '',
@@ -95,7 +94,7 @@ const EditSalesEnquiry = () => {
     const [companies, setCompanies] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [sites, setSites] = useState([]);
-    const [workTypes, setWorkTypes] = useState([]);
+    const [ workTypes, setWorkTypes] = useState([]);
     const [systems, setSystems] = useState([]);
     const [salesPersons, setSalesPersons] = useState([]);
     const [engineers, setEngineers] = useState([]);
@@ -119,7 +118,7 @@ const EditSalesEnquiry = () => {
                     fetch(`${import.meta.env.VITE_API_URL}/api/company`),
                     fetch(`${import.meta.env.VITE_API_URL}/api/customers`),
                     fetch(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/work-type`),
+                    fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/TypeOfWork`),
                     fetch(`${import.meta.env.VITE_API_URL}/api/systems`),
                     fetch(`${import.meta.env.VITE_API_URL}/api/user`)
                 ]);
@@ -130,7 +129,7 @@ const EditSalesEnquiry = () => {
                 const workTypesData = await workTypesRes.json();
                 const systemsData = await systemsRes.json();
                 const usersData = await usersRes.json();
-
+                
                 const engineersData = usersData.users.filter(user => user.accesstype_id?.name === "Engineer");
                 const salesData = usersData.users.filter(user => user.accesstype_id?.name === "Sales");
 
@@ -471,8 +470,8 @@ const EditSalesEnquiry = () => {
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Type of Work</label>
                                             <select
-                                                name="typeOfWork"
-                                                value={formData.typeOfWork._id}
+                                                name="TypeOfWork"
+                                                value={formData.TypeOfWork}
                                                 onChange={handleInputChange}
                                                 className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-md"
                                             >

@@ -8,13 +8,6 @@ const validateMobile = (mobile) => {
   return /^[0-9]{10,15}$/.test(mobile);
 };
 
-const validateGST = (gstNo) => {
-  if (!gstNo) return true; // Optional field
-  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
-    gstNo
-  );
-};
-
 const validateIFSC = (ifsc) => {
   return /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc);
 };
@@ -31,7 +24,7 @@ const validateSupplierData = (data) => {
     errors.push("Invalid status value");
   }
 
-  if (data.gstNo && !validateGST(data.gstNo)) {
+  if (!data.gstNo) {
     errors.push("Invalid GST number format");
   }
 

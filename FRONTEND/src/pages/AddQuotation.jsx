@@ -13,12 +13,16 @@ const AddQuotation = () => {
   const [systems, setSystems] = useState([]);
   const [products, setProducts] = useState([]);
   const [sites, setSites] = useState([]);
+  const [salesEnquiries, setSalesEnquiries] = useState([]);
+  const [siteSystems, setSiteSystems] = useState([]);
   const [loading, setLoading] = useState({
     companies: true,
     customers: true,
     systems: true,
     products: true,
     sites: true,
+    salesEnquiries: false,
+    siteSystems: false,
     submitting: false
   });
 
@@ -33,6 +37,7 @@ const AddQuotation = () => {
     company_id: "",
     customer_id: "",
     site_id: "",
+    sales_enquiry_id: "",
     terms_and_conditions: "",
     include_in_pdf: {
       sr_no: true,
@@ -171,6 +176,49 @@ const AddQuotation = () => {
       throw error;
     } finally {
       setLoading(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
+  // API call to fetch sales enquiries by site
+  const fetchSalesEnquiriesBySite = async (siteId) => {
+    try {
+      setLoading(prev => ({ ...prev, salesEnquiries: true }));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+      // Server currently returns data with non-200 status; avoid strict ok checks
+      const data = await response.json();
+      // data is populated with site object; filter by selected site id
+      const filtered = Array.isArray(data)
+        ? data.filter(enquiry => (enquiry.site?._id || enquiry.site) === siteId)
+        : [];
+      setSalesEnquiries(filtered);
+    } catch (error) {
+      console.error('Error fetching sales enquiries:', error);
+      toast.error('Failed to load sales enquiries');
+      setSalesEnquiries([]);
+    } finally {
+      setLoading(prev => ({ ...prev, salesEnquiries: false }));
+    }
+  };
+
+  // API call to fetch systems available for a site
+  const fetchSiteSystems = async (siteId) => {
+    try {
+      setLoading(prev => ({ ...prev, siteSystems: true }));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
+      const site = await response.json();
+      const systemsFromSite = Array.isArray(site?.site_systems)
+        ? site.site_systems
+            .map(item => item.system_id)
+            .filter(Boolean)
+            .map(sys => ({ _id: sys._id || sys, systemName: sys.systemName || '' }))
+        : [];
+      setSiteSystems(systemsFromSite);
+    } catch (error) {
+      console.error('Error fetching site systems:', error);
+      toast.error('Failed to load site systems');
+      setSiteSystems([]);
+    } finally {
+      setLoading(prev => ({ ...prev, siteSystems: false }));
     }
   };
 
@@ -367,10 +415,12 @@ const AddQuotation = () => {
       setFormData(prev => ({
         ...prev,
         customer_id: "",
-        site_id: ""
+        site_id: "",
+        sales_enquiry_id: ""
       }));
       setCustomers([]);
       setSites([]);
+      setSalesEnquiries([]);
     }
   }, [formData.company_id]);
 
@@ -381,11 +431,29 @@ const AddQuotation = () => {
       // Reset site when customer changes
       setFormData(prev => ({
         ...prev,
-        site_id: ""
+        site_id: "",
+        sales_enquiry_id: ""
       }));
       setSites([]);
+      setSalesEnquiries([]);
     }
   }, [formData.customer_id]);
+
+  // Fetch sales enquiries when site is selected
+  useEffect(() => {
+    if (formData.site_id) {
+      fetchSalesEnquiriesBySite(formData.site_id);
+      fetchSiteSystems(formData.site_id);
+      setFormData(prev => ({
+        ...prev,
+        sales_enquiry_id: "",
+        system_details: ""
+      }));
+    } else {
+      setSalesEnquiries([]);
+      setSiteSystems([]);
+    }
+  }, [formData.site_id]);
 
   // Recalculate amounts when relevant fields change
   useEffect(() => {
@@ -512,6 +580,26 @@ const AddQuotation = () => {
                       </select>
                       {loading.sites && <p className="text-xs text-gray-500 mt-1">Loading sites...</p>}
                     </div>
+
+                    {/* Sales Enquiry */}
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sales Enquiry</label>
+                      <select
+                        name="sales_enquiry_id"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        value={formData.sales_enquiry_id || ""}
+                        onChange={handleInputChange}
+                        disabled={!formData.site_id || loading.salesEnquiries}
+                      >
+                        <option value="">Select Sales Enquiry</option>
+                        {salesEnquiries.map(enquiry => (
+                          <option key={enquiry._id} value={enquiry._id}>
+                            {enquiry.enquiry_code}
+                          </option>
+                        ))}
+                      </select>
+                      {loading.salesEnquiries && <p className="text-xs text-gray-500 mt-1">Loading sales enquiries...</p>}
+                    </div>
                   </div>
                 )}
               </div>
@@ -540,16 +628,18 @@ const AddQuotation = () => {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           value={formData.system_details}
                           onChange={handleInputChange}
-                          disabled={loading.systems}
+                          disabled={loading.siteSystems || (!formData.site_id && loading.systems)}
                         >
                           <option value="">Select System</option>
-                          {systems.map(system => (
+                          {(formData.site_id ? siteSystems : systems).map(system => (
                             <option key={system._id} value={system._id}>
                               {system.systemName}
                             </option>
                           ))}
                         </select>
-                        {loading.systems && <p className="text-xs text-gray-500 mt-1">Loading systems...</p>}
+                        {(formData.site_id ? loading.siteSystems : loading.systems) && (
+                          <p className="text-xs text-gray-500 mt-1">Loading systems...</p>
+                        )}
                       </div>
                     </div>
                   </div>

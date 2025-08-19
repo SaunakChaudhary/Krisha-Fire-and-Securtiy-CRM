@@ -188,7 +188,7 @@ const ViewSalesEnquiry = () => {
                                         </h2>
                                         <div className="space-y-2">
                                             <DetailItem label="Sales Person" value={
-                                                enquiry.assignedTo ? `${enquiry.assignedTo.firstname} ${enquiry.assignedTo.lastname}` : 'Not assigned'
+                                                enquiry.salesPerson ? `${enquiry.salesPerson.firstname} ${enquiry.salesPerson.lastname}` : 'Not assigned'
                                             } />
                                             <DetailItem label="Referral Engineer" value={
                                                 enquiry.referealEngineer ? `${enquiry.referealEngineer.firstname} ${enquiry.referealEngineer.lastname}` : 'None'

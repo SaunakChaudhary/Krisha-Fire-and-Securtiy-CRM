@@ -3,7 +3,7 @@ const router = express.Router();
 const diaryController = require('../controllers/diary.controller');
 
 // Get diary entries for a specific date and engineer
-router.get('/entries', diaryController.getDiaryEntries);
+router.get('/entries', diaryController.getAllDiaryEntries);
 
 // Create a new diary entry
 router.post('/entries/:userId', diaryController.createDiaryEntry);

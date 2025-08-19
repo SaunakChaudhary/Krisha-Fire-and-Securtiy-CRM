@@ -8,6 +8,11 @@ const quotationSchema = new mongoose.Schema(
       ref: "Company",
       required: true,
     },
+    sales_enquiry_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SalesEnquiry",
+      required: false,
+    },
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",

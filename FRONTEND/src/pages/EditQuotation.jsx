@@ -14,6 +14,8 @@ const EditQuotation = () => {
   const [systems, setSystems] = useState([]);
   const [products, setProducts] = useState([]);
   const [sites, setSites] = useState([]);
+  const [salesEnquiries, setSalesEnquiries] = useState([]);
+  const [siteSystems, setSiteSystems] = useState([]);
   const [loading, setLoading] = useState({
     initial: true,
     companies: false,
@@ -21,6 +23,8 @@ const EditQuotation = () => {
     systems: false,
     products: false,
     sites: false,
+    salesEnquiries: false,
+    siteSystems: false,
     submitting: false
   });
 
@@ -35,6 +39,7 @@ const EditQuotation = () => {
     company_id: "",
     customer_id: "",
     site_id: "",
+    sales_enquiry_id: "",
     terms_and_conditions: "",
     include_in_pdf: {
       sr_no: true,
@@ -145,6 +150,47 @@ const EditQuotation = () => {
     }
   };
 
+  // API call to fetch sales enquiries by site
+  const fetchSalesEnquiriesBySite = async (siteId) => {
+    try {
+      setLoading(prev => ({ ...prev, salesEnquiries: true }));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+      const data = await response.json();
+      const filtered = Array.isArray(data)
+        ? data.filter(enquiry => (enquiry.site?._id || enquiry.site) === siteId)
+        : [];
+      setSalesEnquiries(filtered);
+    } catch (error) {
+      console.error('Error fetching sales enquiries:', error);
+      toast.error('Failed to load sales enquiries');
+      setSalesEnquiries([]);
+    } finally {
+      setLoading(prev => ({ ...prev, salesEnquiries: false }));
+    }
+  };
+
+  // API call to fetch systems available for a site
+  const fetchSiteSystems = async (siteId) => {
+    try {
+      setLoading(prev => ({ ...prev, siteSystems: true }));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
+      const site = await response.json();
+      const systemsFromSite = Array.isArray(site?.site_systems)
+        ? site.site_systems
+            .map(item => item.system_id)
+            .filter(Boolean)
+            .map(sys => ({ _id: sys._id || sys, systemName: sys.systemName || '' }))
+        : [];
+      setSiteSystems(systemsFromSite);
+    } catch (error) {
+      console.error('Error fetching site systems:', error);
+      toast.error('Failed to load site systems');
+      setSiteSystems([]);
+    } finally {
+      setLoading(prev => ({ ...prev, siteSystems: false }));
+    }
+  };
+
   // API call to fetch quotation by ID
   const fetchQuotation = async () => {
     try {
@@ -172,6 +218,7 @@ const EditQuotation = () => {
         company_id: data.data.company_id?._id || "",
         customer_id: data.data.customer_id?._id || "",
         site_id: data.data.site_id?._id || "",
+        sales_enquiry_id: data.data.sales_enquiry_id?._id || "",
         terms_and_conditions: data.data.terms_and_conditions || "",
         include_in_pdf: data.data.include_in_pdf || {
           sr_no: true,
@@ -195,6 +242,15 @@ const EditQuotation = () => {
       // If customer is set, fetch its sites
       if (data.data.customer_id?._id) {
         await fetchSitesByCustomer(data.data.customer_id._id);
+      }
+
+      // If site is set, fetch site systems and sales enquiries
+      const selectedSiteId = data.data.site_id?._id;
+      if (selectedSiteId) {
+        await Promise.all([
+          fetchSiteSystems(selectedSiteId),
+          fetchSalesEnquiriesBySite(selectedSiteId)
+        ]);
       }
 
       setLoading(prev => ({ ...prev, initial: false }));
@@ -433,9 +489,13 @@ const EditQuotation = () => {
         setFormData(prev => ({
           ...prev,
           customer_id: "",
-          site_id: ""
+          site_id: "",
+          sales_enquiry_id: "",
+          system_details: ""
         }));
       }
+      setSalesEnquiries([]);
+      setSiteSystems([]);
     }
   }, [formData.company_id]);
 
@@ -447,11 +507,31 @@ const EditQuotation = () => {
       if (formData.site_id) {
         setFormData(prev => ({
           ...prev,
-          site_id: ""
+          site_id: "",
+          sales_enquiry_id: "",
+          system_details: ""
         }));
       }
+      setSalesEnquiries([]);
+      setSiteSystems([]);
     }
   }, [formData.customer_id]);
+
+  // Fetch dependent data when site changes
+  useEffect(() => {
+    if (formData.site_id) {
+      fetchSalesEnquiriesBySite(formData.site_id);
+      fetchSiteSystems(formData.site_id);
+      setFormData(prev => ({
+        ...prev,
+        sales_enquiry_id: "",
+        system_details: ""
+      }));
+    } else {
+      setSalesEnquiries([]);
+      setSiteSystems([]);
+    }
+  }, [formData.site_id]);
 
   // Recalculate amounts when relevant fields change
   useEffect(() => {
@@ -601,6 +681,26 @@ const EditQuotation = () => {
                       </select>
                       {loading.sites && <p className="text-xs text-gray-500 mt-1">Loading sites...</p>}
                     </div>
+
+                    {/* Sales Enquiry */}
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sales Enquiry</label>
+                      <select
+                        name="sales_enquiry_id"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        value={formData.sales_enquiry_id || ""}
+                        onChange={handleInputChange}
+                        disabled={!formData.site_id || loading.salesEnquiries}
+                      >
+                        <option value="">Select Sales Enquiry</option>
+                        {salesEnquiries.map(enquiry => (
+                          <option key={enquiry._id} value={enquiry._id}>
+                            {enquiry.enquiry_code}
+                          </option>
+                        ))}
+                      </select>
+                      {loading.salesEnquiries && <p className="text-xs text-gray-500 mt-1">Loading sales enquiries...</p>}
+                    </div>
                   </div>
                 )}
               </div>
@@ -629,16 +729,18 @@ const EditQuotation = () => {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           value={formData.system_details}
                           onChange={handleInputChange}
-                          disabled={loading.systems}
+                          disabled={loading.siteSystems || (!formData.site_id && loading.systems)}
                         >
                           <option value="">Select System</option>
-                          {systems.map(system => (
+                          {(formData.site_id ? siteSystems : systems).map(system => (
                             <option key={system._id} value={system._id}>
                               {system.systemName}
                             </option>
                           ))}
                         </select>
-                        {loading.systems && <p className="text-xs text-gray-500 mt-1">Loading systems...</p>}
+                        {(formData.site_id ? loading.siteSystems : loading.systems) && (
+                          <p className="text-xs text-gray-500 mt-1">Loading systems...</p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -23,386 +23,59 @@ import {
   User,
   MapPin,
   Notebook,
+  Info,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../Context/AuthContext";
 
-const Diary = () => {
-  const { user } = useContext(AuthContext);
+// Move AssignmentModal outside the main component to prevent re-renders
+const AssignmentModal = ({ 
+  isOpen, 
+  onClose, 
+  currentAssignment, 
+  setCurrentAssignment, 
+  engineers, 
+  siteName, 
+  call_no, 
+  timeSlots, 
+  hasRequiredParams, 
+  hasInitialAssignment, 
+  engineer_id, 
+  onSave, 
+  onDelete 
+}) => {
+  if (!isOpen) return null;
 
-  // URL parameters
-  const { engineer_id, call_no } = useParams();
-  const [searchParams] = useSearchParams();
-  const site = searchParams.get("site");
+  // Check if save button should be enabled
+  const canSave = () => {
+    // For existing assignments, always allow saving
+    if (currentAssignment?._id) return true;
 
-  // State management
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [timeSlots] = useState(Array.from({ length: 24 }, (_, i) => `${i}:00`));
-  const [engineers, setEngineers] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentAssignment, setCurrentAssignment] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notification, setNotification] = useState(null);
-  const [sites, setSites] = useState([]);
-  const [siteName, setSiteName] = useState("");
-  const [hasInitialAssignment, setHasInitialAssignment] = useState(false);
-  const [notesInputFocused, setNotesInputFocused] = useState(false);
+    // For new assignments, check if we have required parameters and engineer restrictions
+    if (!hasRequiredParams) return false;
 
-  // Check if required parameters are present
-  const hasRequiredParams = engineer_id && call_no && site;
+    // Check if this is the first assignment and engineer is correct
+    if (!hasInitialAssignment && currentAssignment?.engineerId !== engineer_id) return false;
 
-  const fetchEngineers = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch engineers');
-      }
-      const data = await response.json();
-      const filteredEngineers = data.users.filter(
-        user => user.accesstype_id?.name === "Engineer"
-      );
-      setEngineers(filteredEngineers);
-    } catch (error) {
-      console.error("Error fetching engineers:", error);
-      showNotification(error.message, "error");
-    }
+    return true;
   };
 
-  // Fetch site details
-  const fetchSiteDetails = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${site}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch site data');
-      }
-      const data = await response.json();
-      setSiteName(data.site_name);
-    } catch (error) {
-      console.error("Error fetching site data:", error);
-      showNotification(error.message, "error");
-    }
-  };
-
-  // Fetch diary entries for current date
-  const fetchDiaryEntries = async () => {
-    try {
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/diary/entries?date=${dateStr}&engineerId=${engineer_id}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch diary entries');
-      }
-      
-      const data = await response.json();
-      setAssignments(data.data || []);
-      
-      // Check if initial engineer has assignments
-      const initialEngineerAssignments = (data.data || []).filter(
-        a => a.engineer._id === engineer_id && a.callLog?.callNumber === call_no
-      );
-      setHasInitialAssignment(initialEngineerAssignments.length > 0);
-    } catch (error) {
-      console.error("Error fetching diary entries:", error);
-      showNotification("Error loading diary entries", "error");
-    }
-  };
-
-  // Check for time conflicts
-  const checkTimeConflict = async (engineerId, date, startTime, endTime, excludeId = null) => {
-    try {
-      let url = `${import.meta.env.VITE_API_URL}/api/diary/check-conflict?engineer=${engineerId}&date=${date}&startTime=${startTime}&endTime=${endTime}`;
-      if (excludeId) {
-        url += `&excludeId=${excludeId}`;
-      }
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to check time conflict');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error checking time conflict:", error);
-      return { hasConflict: false };
-    }
-  };
-
-  // Fetch assignments for call log
-  const fetchCallLogAssignments = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/diary/call-log/${call_no}/assignments`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch call log assignments');
-      }
-      
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching call log assignments:", error);
-      return [];
-    }
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchEngineers();
-        
-        if (hasRequiredParams) {
-          await fetchSiteDetails();
-          await fetchDiaryEntries();
-          
-          // Also fetch all assignments for this call log to check initial assignment
-          const callLogAssignments = await fetchCallLogAssignments();
-          const initialAssignments = callLogAssignments.filter(
-            a => a.engineer._id === engineer_id
-          );
-          setHasInitialAssignment(initialAssignments.length > 0);
-        }
-      } catch (error) {
-        console.error("Error loading data:", error);
-        showNotification("Error loading data", "error");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentDate, engineer_id, call_no, site]);
-
-  const showNotification = (message, type = "success") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleDateChange = (newDate) => {
-    setCurrentDate(newDate);
-  };
-
-  const handlePreviousDay = () => handleDateChange(addDays(currentDate, -1));
-  const handleNextDay = () => handleDateChange(addDays(currentDate, 1));
-  const handleToday = () => handleDateChange(new Date());
-
-  const handleSlotClick = async (engineerId, timeSlot) => {
-    if (!hasRequiredParams) {
-      showNotification("Missing required parameters (engineer, call number, or site)", "error");
-      return;
-    }
-
-    // Check if this is the first assignment and engineer_id is specified
-    if (!hasInitialAssignment && engineerId !== engineer_id) {
-      showNotification("First assignment must be for the specified engineer", "error");
-      return;
-    }
-
-    // Check if this slot is already assigned
-    const existingAssignment = assignments.find(
-      (a) =>
-        a.engineer._id === engineerId &&
-        a.date === format(currentDate, "yyyy-MM-dd") &&
-        timeSlot >= a.startTime &&
-        timeSlot < a.endTime
-    );
-
-    if (existingAssignment) {
-      setCurrentAssignment({
-        ...existingAssignment,
-        engineerId: existingAssignment.engineer._id,
-        siteId: existingAssignment.site?._id || site,
-        call_no: existingAssignment.callLog?.callNumber || call_no
-      });
-      setIsModalOpen(true);
-      return;
-    }
-
-    // Prepare new assignment
-    setCurrentAssignment({
-      engineerId,
-      siteId: site,
-      call_no,
-      date: format(currentDate, "yyyy-MM-dd"),
-      startTime: timeSlot,
-      endTime: `${parseInt(timeSlot.split(":")[0]) + 1}:00`,
-      notes: "",
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleSaveAssignment = async (assignment) => {
-    if (!hasRequiredParams) {
-      showNotification("Missing required parameters", "error");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Check for time conflicts
-      const conflictCheck = await checkTimeConflict(
-        assignment.engineerId,
-        assignment.date,
-        assignment.startTime,
-        assignment.endTime,
-        assignment._id
-      );
-
-      if (conflictCheck.hasConflict) {
-        showNotification(`Time conflict with existing assignment`, "error");
-        return;
-      }
-
-      let response, data;
-      
-      if (assignment._id) {
-        // Update existing assignment
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${assignment._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            site: assignment.siteId,
-            callLog: assignment.call_no,
-            engineer: assignment.engineerId,
-            date: assignment.date,
-            startTime: assignment.startTime,
-            endTime: assignment.endTime,
-            notes: assignment.notes,
-            userId: localStorage.getItem('userId') // Assuming you store user ID in localStorage
-          })
-        });
-      } else {
-        // Create new assignment
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${user._id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            site: assignment.siteId,
-            callLog: assignment.call_no,
-            engineer: assignment.engineerId,
-            date: assignment.date,
-            startTime: assignment.startTime,
-            endTime: assignment.endTime,
-            notes: assignment.notes,
-            userId: localStorage.getItem('userId'),
-            initialEngineerId: engineer_id
-          })
-        });
-      }
-
-      data = await response.json();
-
-      console.log(data)
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-
-      // Refresh assignments
-      await fetchDiaryEntries();
-      
-      if (!assignment._id && assignment.engineerId === engineer_id) {
-        setHasInitialAssignment(true);
-      }
-
-      showNotification(
-        `Assignment ${assignment._id ? "updated" : "created"} successfully`
-      );
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error saving assignment:", error);
-      showNotification(error.message || "Error saving assignment", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteAssignment = async () => {
-    if (!currentAssignment?._id) {
-      showNotification("No assignment selected for deletion", "error");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${currentAssignment._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          initialEngineerId: engineer_id,
-          userId: localStorage.getItem('userId')
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to delete assignment');
-      }
-
-      // Refresh assignments
-      await fetchDiaryEntries();
-
-      // Check if we're deleting the initial assignment
-      if (currentAssignment.engineerId === engineer_id) {
-        const callLogAssignments = await fetchCallLogAssignments();
-        const remainingInitialAssignments = callLogAssignments.filter(
-          a => a.engineer._id === engineer_id
-        );
-        setHasInitialAssignment(remainingInitialAssignments.length > 0);
-      }
-
-      showNotification('Assignment deleted successfully');
-      setIsDeleteModalOpen(false);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error deleting assignment:", error);
-      showNotification(error.message || 'Error deleting assignment', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getAssignmentForSlot = (engineerId, timeSlot) => {
-    return assignments.find(a =>
-      a.engineer._id === engineerId &&
-      a.date === format(currentDate, 'yyyy-MM-dd') &&
-      timeSlot >= a.startTime &&
-      timeSlot < a.endTime
-    );
-  };
-
-  const getDateDisplay = () => {
-    if (isToday(currentDate)) return 'Today';
-    if (isTomorrow(currentDate)) return 'Tomorrow';
-    if (isYesterday(currentDate)) return 'Yesterday';
-    return format(currentDate, 'EEEE, MMM d, yyyy');
-  };
-
-  // Modal component
-  const AssignmentModal = () => (
-    <div className={`fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50 ${isModalOpen ? 'block' : 'hidden'}`}>
+  return (
+    <div className="fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">{currentAssignment?._id ? 'Edit Assignment' : 'Create Assignment'}</h3>
-            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
               <X className="h-6 w-6" />
             </button>
           </div>
 
-          {!hasRequiredParams && (
+          {!currentAssignment?._id && !hasRequiredParams && (
             <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
               <AlertCircle className="inline mr-2" />
-              Cannot create/edit assignments without engineer, call number, and site
+              Cannot create new assignments without engineer, call number, and site
             </div>
           )}
 
@@ -415,21 +88,21 @@ const Diary = () => {
                   value={currentAssignment?.engineerId || ''}
                   onChange={(e) => setCurrentAssignment({ ...currentAssignment, engineerId: e.target.value })}
                   className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2"
-                  disabled={!hasInitialAssignment && engineer_id && currentAssignment?.engineerId === engineer_id}
+                  disabled={!currentAssignment?._id && !hasInitialAssignment && engineer_id && currentAssignment?.engineerId === engineer_id}
                 >
                   {engineers.map(engineer => (
                     <option
                       key={engineer._id}
                       value={engineer._id}
-                      disabled={!hasInitialAssignment && engineer._id !== engineer_id}
+                      disabled={!currentAssignment?._id && !hasInitialAssignment && engineer._id !== engineer_id}
                     >
                       {engineer.firstname + " " + engineer.lastname}
-                      {!hasInitialAssignment && engineer._id !== engineer_id && " (assign to initial engineer first)"}
+                      {!currentAssignment?._id && !hasInitialAssignment && engineer._id !== engineer_id && " (assign to initial engineer first)"}
                     </option>
                   ))}
                 </select>
               </div>
-              {!hasInitialAssignment && engineer_id && (
+              {!currentAssignment?._id && !hasInitialAssignment && engineer_id && (
                 <p className="mt-1 text-sm text-gray-500">
                   First assignment must be for the specified engineer
                 </p>
@@ -499,10 +172,8 @@ const Diary = () => {
                 <textarea
                   value={currentAssignment?.notes || ''}
                   onChange={(e) => setCurrentAssignment({ ...currentAssignment, notes: e.target.value })}
-                  onFocus={() => setNotesInputFocused(true)}
-                  onBlur={() => setNotesInputFocused(false)}
                   rows={3}
-                  className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10 p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -512,7 +183,7 @@ const Diary = () => {
             <div>
               {currentAssignment?._id && (
                 <button
-                  onClick={() => setIsDeleteModalOpen(true)}
+                  onClick={onDelete}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   Delete
@@ -521,19 +192,18 @@ const Diary = () => {
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={onClose}
                 className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleSaveAssignment(currentAssignment)}
-                disabled={!hasRequiredParams || (!hasInitialAssignment && currentAssignment?.engineerId !== engineer_id)}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  !hasRequiredParams || (!hasInitialAssignment && currentAssignment?.engineerId !== engineer_id) 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
+                onClick={() => onSave(currentAssignment)}
+                disabled={!canSave()}
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${!canSave()
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
               >
                 Save
               </button>
@@ -543,15 +213,19 @@ const Diary = () => {
       </div>
     </div>
   );
+};
 
-  // Delete Confirmation Modal
-  const DeleteModal = () => (
-    <div className={`fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50 ${isDeleteModalOpen ? 'block' : 'hidden'}`}>
+// Move DeleteModal outside the main component
+const DeleteModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">Confirm Deletion</h3>
-            <button onClick={() => setIsDeleteModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
               <X className="h-6 w-6" />
             </button>
           </div>
@@ -560,13 +234,13 @@ const Diary = () => {
 
           <div className="flex justify-end space-x-3">
             <button
-              onClick={() => setIsDeleteModalOpen(false)}
+              onClick={onClose}
               className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
             </button>
             <button
-              onClick={handleDeleteAssignment}
+              onClick={onConfirm}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Delete
@@ -576,21 +250,435 @@ const Diary = () => {
       </div>
     </div>
   );
+};
 
-  // Notification component
-  const NotificationComponent = () => {
-    if (!notification) return null;
+// Move NotificationComponent outside the main component
+const NotificationComponent = ({ notification, onClose }) => {
+  if (!notification) return null;
 
-    const bgColor = notification.type === 'error' ? 'bg-red-100' : 'bg-green-100';
-    const textColor = notification.type === 'error' ? 'text-red-800' : 'text-green-800';
-    const icon = notification.type === 'error' ? <AlertCircle className="h-5 w-5" /> : <Check className="h-5 w-5" />;
+  const bgColor =
+    notification.type === "error"
+      ? "bg-red-100"
+      : notification.type === "info"
+        ? "bg-blue-100"
+        : "bg-green-100";
 
-    return (
-      <div className={`fixed bottom-4 right-4 ${bgColor} ${textColor} px-4 py-2 rounded-md shadow-lg flex items-center space-x-2 z-50`}>
-        {icon}
-        <span>{notification.message}</span>
-      </div>
+  const textColor =
+    notification.type === "error"
+      ? "text-red-800"
+      : notification.type === "info"
+        ? "text-blue-800"
+        : "text-green-800";
+
+  const icon =
+    notification.type === "error" ? (
+      <AlertCircle className="h-5 w-5" />
+    ) : notification.type === "info" ? (
+      <Info className="h-5 w-5" />
+    ) : (
+      <Check className="h-5 w-5" />
     );
+
+  return (
+    <div
+      className={`fixed bottom-4 right-4 ${bgColor} ${textColor} px-4 py-2 rounded-md shadow-lg flex items-center space-x-2 z-50`}
+    >
+      {icon}
+      <span>{notification.message}</span>
+      <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
+
+const Diary = () => {
+  const { user } = useContext(AuthContext);
+
+  // URL parameters
+  const { engineer_id, call_no } = useParams();
+  const [searchParams] = useSearchParams();
+  const site = searchParams.get("site");
+
+  // State management
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [timeSlots] = useState(Array.from({ length: 24 }, (_, i) => `${i}:00`));
+  const [engineers, setEngineers] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentAssignment, setCurrentAssignment] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notification, setNotification] = useState(null);
+  const [siteName, setSiteName] = useState("");
+  const [hasInitialAssignment, setHasInitialAssignment] = useState(false);
+
+  // Check if required parameters are present
+  const hasRequiredParams = engineer_id && call_no && site;
+
+  // Helper function to convert time to minutes
+  const toMinutes = (t) => {
+    const [h, m] = String(t || '0:0').split(':').map(v => parseInt(v, 10));
+    return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+  };
+
+  const fetchEngineers = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch engineers');
+      }
+      const data = await response.json();
+      const filteredEngineers = data.users.filter(
+        user => user.accesstype_id?.name === "Engineer"
+      );
+      setEngineers(filteredEngineers);
+    } catch (error) {
+      console.error("Error fetching engineers:", error);
+      showNotification(error.message, "error");
+    }
+  };
+
+  const fetchSiteDetails = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${site}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch site data');
+      }
+      const data = await response.json();
+      setSiteName(data.site_name);
+    } catch (error) {
+      console.error("Error fetching site data:", error);
+      showNotification(error.message, "error");
+    }
+  };
+
+  const fetchDiaryEntries = async () => {
+    try {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      let url = `${import.meta.env.VITE_API_URL}/api/diary/entries?date=${dateStr}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch diary entries');
+      }
+
+      const data = await response.json();
+      setAssignments(data.data || []);
+
+      if (hasRequiredParams) {
+        // Check if initial engineer has assignments (for edit mode restrictions)
+        const initialEngineerAssignments = (data.data || []).filter(
+          a => a.engineer._id === engineer_id
+        );
+        setHasInitialAssignment(initialEngineerAssignments.length > 0);
+      }
+    } catch (error) {
+      console.error("Error fetching diary entries:", error);
+      showNotification("Error loading diary entries", "error");
+    }
+  };
+
+  const checkTimeConflict = async (engineerId, date, startTime, endTime, excludeId = null) => {
+    try {
+      let url = `${import.meta.env.VITE_API_URL}/api/diary/check-conflict?engineer=${engineerId}&date=${date}&startTime=${startTime}&endTime=${endTime}`;
+      if (excludeId) {
+        url += `&excludeId=${excludeId}`;
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to check time conflict');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error checking time conflict:", error);
+      return { hasConflict: false };
+    }
+  };
+
+  const fetchCallLogAssignments = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/diary/call-log/${call_no}/assignments`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch call log assignments');
+      }
+
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error("Error fetching call log assignments:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      try {
+        const parsedDate = parseISO(dateParam);
+        if (!isNaN(parsedDate.getTime())) {
+          setCurrentDate(parsedDate);
+        }
+      } catch (e) {
+        console.error("Invalid date parameter:", dateParam);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await fetchEngineers();
+
+        if (hasRequiredParams) {
+          await fetchSiteDetails();
+        }
+
+        await fetchDiaryEntries();
+
+        if (hasRequiredParams) {
+          const callLogAssignments = await fetchCallLogAssignments();
+          const initialAssignments = callLogAssignments.filter(
+            a => a.engineer._id === engineer_id
+          );
+          setHasInitialAssignment(initialAssignments.length > 0);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        showNotification("Error loading data", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentDate, engineer_id, call_no, site]);
+
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleDateChange = (newDate) => {
+    setCurrentDate(newDate);
+  };
+
+  const handlePreviousDay = () => handleDateChange(addDays(currentDate, -1));
+  const handleNextDay = () => handleDateChange(addDays(currentDate, 1));
+  const handleToday = () => handleDateChange(new Date());
+
+  const handleSlotClick = async (engineerId, timeSlot) => {
+    // Check if this slot is already assigned
+    const existingAssignment = assignments.find(a => {
+      if (a.engineer._id !== engineerId) return false;
+      if (format(new Date(a.date), "yyyy-MM-dd") !== format(currentDate, "yyyy-MM-dd")) return false;
+      const slotMin = toMinutes(timeSlot);
+      const startMin = toMinutes(a.startTime);
+      const endMin = toMinutes(a.endTime);
+      return slotMin >= startMin && slotMin < endMin;
+    });
+
+    if (existingAssignment) {
+      setCurrentAssignment({
+        ...existingAssignment,
+        engineerId: existingAssignment.engineer._id,
+        siteId: existingAssignment.site?._id || site,
+        call_no: existingAssignment.callLog?.call_number || call_no
+      });
+      setIsModalOpen(true);
+      return;
+    }
+
+    // For new assignments, check if we have required parameters
+    if (!hasRequiredParams) {
+      showNotification("Cannot create new assignments in view-only mode", "info");
+      return;
+    }
+
+    // Check if this is the first assignment and engineer_id is specified
+    if (!hasInitialAssignment && engineerId !== engineer_id) {
+      showNotification("First assignment must be for the specified engineer", "error");
+      return;
+    }
+
+    // Prepare new assignment
+    const startHour = parseInt(timeSlot.split(":")[0], 10);
+    const defaultEndTime = startHour === 23 ? "23:59" : `${startHour + 1}:00`;
+    setCurrentAssignment({
+      engineerId,
+      siteId: site,
+      call_no,
+      date: format(currentDate, "yyyy-MM-dd"),
+      startTime: timeSlot,
+      endTime: defaultEndTime,
+      notes: "",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveAssignment = async (assignment) => {
+    setIsLoading(true);
+    try {
+      const ensureValidEndTime = (start, end) => {
+        const [sh, sm] = String(start || '0:0').split(':').map(v => parseInt(v, 10));
+        const [eh, em] = String(end || '0:0').split(':').map(v => parseInt(v, 10));
+        const startMinutes = (Number.isFinite(sh) ? sh : 0) * 60 + (Number.isFinite(sm) ? sm : 0);
+        const endMinutes = (Number.isFinite(eh) ? eh : 0) * 60 + (Number.isFinite(em) ? em : 0);
+        if (endMinutes > startMinutes) return end;
+        if ((Number.isFinite(sh) ? sh : 0) === 23) return '23:59';
+        return `${(Number.isFinite(sh) ? sh : 0) + 1}:00`;
+      };
+
+      const adjustedEndTime = ensureValidEndTime(assignment.startTime, assignment.endTime);
+      const assignmentToSend = { ...assignment, endTime: adjustedEndTime };
+
+      // Check for time conflicts
+      const conflictCheck = await checkTimeConflict(
+        assignmentToSend.engineerId,
+        assignmentToSend.date,
+        assignmentToSend.startTime,
+        assignmentToSend.endTime,
+        assignmentToSend._id
+      );
+
+      if (conflictCheck.hasConflict) {
+        showNotification(`Time conflict with existing assignment`, "error");
+        setIsLoading(false);
+        return;
+      }
+
+      let response, data;
+
+      if (assignment._id) {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${assignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            site: assignmentToSend.siteId,
+            callLog: assignmentToSend.call_no,
+            engineer: assignmentToSend.engineerId,
+            date: assignmentToSend.date,
+            startTime: assignmentToSend.startTime,
+            endTime: assignmentToSend.endTime,
+            notes: assignmentToSend.notes,
+            userId: user?._id || localStorage.getItem('userId')
+          })
+        });
+      } else {
+        if (!hasRequiredParams) {
+          showNotification("Cannot create new assignments in view-only mode", "error");
+          setIsLoading(false);
+          return;
+        }
+
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${user?._id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            site: assignmentToSend.siteId,
+            callLog: assignmentToSend.call_no,
+            engineer: assignmentToSend.engineerId,
+            date: assignmentToSend.date,
+            startTime: assignmentToSend.startTime,
+            endTime: assignmentToSend.endTime,
+            notes: assignmentToSend.notes,
+            userId: user?._id
+          })
+        });
+      }
+
+      data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to save assignment');
+      }
+
+      // Refresh assignments
+      await fetchDiaryEntries();
+
+      if (hasRequiredParams) {
+        const callLogAssignments = await fetchCallLogAssignments();
+        const initialAssignments = callLogAssignments.filter(
+          a => a.engineer._id === engineer_id
+        );
+        setHasInitialAssignment(initialAssignments.length > 0);
+      }
+
+      showNotification(
+        `Assignment ${assignment._id ? "updated" : "created"} successfully`
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving assignment:", error.message);
+      showNotification(error.message || "Error saving assignment", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    if (!currentAssignment?._id) {
+      showNotification("No assignment selected for deletion", "error");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${currentAssignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete assignment');
+      }
+
+      await fetchDiaryEntries();
+
+      if (hasRequiredParams) {
+        const callLogAssignments = await fetchCallLogAssignments();
+        const initialAssignments = callLogAssignments.filter(
+          a => a.engineer._id === engineer_id
+        );
+        setHasInitialAssignment(initialAssignments.length > 0);
+      }
+
+      showNotification('Assignment deleted successfully');
+      setIsDeleteModalOpen(false);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error deleting assignment:", error);
+      showNotification(error.message || 'Error deleting assignment', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getAssignmentForSlot = (engineerId, timeSlot) => {
+    const slotMin = toMinutes(timeSlot);
+    const currentDateStr = format(currentDate, 'yyyy-MM-dd');
+
+    return assignments.find(a =>
+      a.engineer._id === engineerId &&
+      format(new Date(a.date), 'yyyy-MM-dd') === currentDateStr &&
+      slotMin >= toMinutes(a.startTime) &&
+      slotMin < toMinutes(a.endTime)
+    );
+  };
+
+  const getDateDisplay = () => {
+    if (isToday(currentDate)) return 'Today';
+    if (isTomorrow(currentDate)) return 'Tomorrow';
+    if (isYesterday(currentDate)) return 'Yesterday';
+    return format(currentDate, 'EEEE, MMM d, yyyy');
   };
 
   return (
@@ -656,7 +744,7 @@ const Diary = () => {
                   <div className="mt-1 flex items-center">
                     <User className="h-5 w-5 text-gray-400 mr-2" />
                     <span className="font-medium">
-                      {engineer_id ? engineers.find(e => e._id === engineer_id)?.firstname + " " + engineers.find(e => e._id === engineer_id)?.lastname || "Not specified" : "Not specified"}
+                      {engineer_id ? engineers.find(e => e._id === engineer_id)?.firstname + " " + engineers.find(e => e._id === engineer_id)?.lastname || "Not specified" : "Viewing all engineers"}
                     </span>
                   </div>
                 </div>
@@ -674,10 +762,15 @@ const Diary = () => {
                   </div>
                 </div>
               </div>
-              {!hasRequiredParams && (
-                <div className="mt-3 p-2 bg-red-100 text-red-800 rounded-md flex items-center">
+              {!hasRequiredParams ? (
+                <div className="mt-3 p-2 bg-blue-100 text-blue-800 rounded-md flex items-center">
                   <AlertCircle className="h-5 w-5 mr-2" />
-                  <span>View-only mode: Cannot assign tasks without engineer, call number, and site</span>
+                  <span>View-only mode: Can edit/delete existing assignments</span>
+                </div>
+              ) : (
+                <div className="mt-3 p-2 bg-green-100 text-green-800 rounded-md flex items-center">
+                  <Check className="h-5 w-5 mr-2" />
+                  <span>Edit mode: You can create, edit, and delete assignments</span>
                 </div>
               )}
             </div>
@@ -709,47 +802,59 @@ const Diary = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 bg-white">
-                        {engineers.map((engineer) => (
-                          <tr key={engineer._id}>
-                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 sticky left-0 bg-white z-10">
-                              <div className="font-medium">
-                                {engineer.firstname + " " + engineer.lastname}
-                                {engineer._id === engineer_id && (
-                                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Initial
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-gray-500 text-xs">{engineer.accesstype_id?.name || "Engineer"}</div>
-                            </td>
-                            {timeSlots.map((timeSlot) => {
-                              const assignment = getAssignmentForSlot(engineer._id, timeSlot);
-                              const isFirstHour = timeSlot === assignment?.startTime;
+                        {engineers.map((engineer) => {
+                          const engineerAssignments = assignments.filter(a =>
+                            a.engineer._id === engineer._id &&
+                            format(new Date(a.date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
+                          );
 
-                              return (
-                                <td
-                                  key={`${engineer._id}-${timeSlot}`}
-                                  onClick={() => hasRequiredParams && handleSlotClick(engineer._id, timeSlot)}
-                                  className={`relative px-3 py-4 text-sm ${hasRequiredParams ? 'cursor-pointer' : 'cursor-default'} 
-                                    ${assignment ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
-                                  title={!hasRequiredParams ? "View-only mode" : ""}
-                                >
-                                  {assignment && isFirstHour && (
-                                    <div className="absolute inset-0 flex items-center justify-center p-1">
-                                      <div className="text-xs text-center">
-                                        <div className="font-medium">{assignment.site?.name || siteName}</div>
-                                        <div>{assignment.startTime}-{assignment.endTime}</div>
-                                        {assignment.notes && (
-                                          <div className="truncate text-gray-500">{assignment.notes}</div>
-                                        )}
-                                      </div>
-                                    </div>
+                          return (
+                            <tr key={engineer._id}>
+                              <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 sticky left-0 bg-white z-10">
+                                <div className="font-medium">
+                                  {engineer.firstname + " " + engineer.lastname}
+                                  {engineer._id === engineer_id && (
+                                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                      Initial
+                                    </span>
                                   )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
+                                </div>
+                                <div className="text-gray-500 text-xs">{engineer.accesstype_id?.name || "Engineer"}</div>
+                              </td>
+                              {timeSlots.map((timeSlot) => {
+                                const assignment = engineerAssignments.find(a => {
+                                  const slotMin = toMinutes(timeSlot);
+                                  const startMin = toMinutes(a.startTime);
+                                  const endMin = toMinutes(a.endTime);
+                                  return slotMin >= startMin && slotMin < endMin;
+                                });
+
+                                const isFirstHour = assignment && timeSlot === assignment.startTime;
+
+                                return (
+                                  <td
+                                    key={`${engineer._id}-${timeSlot}`}
+                                    onClick={() => handleSlotClick(engineer._id, timeSlot)}
+                                    className={`relative px-3 py-4 text-sm cursor-pointer 
+                                      ${assignment ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
+                                  >
+                                    {assignment && isFirstHour && (
+                                      <div className="absolute inset-0 flex items-center justify-center p-1">
+                                        <div className="text-xs text-center">
+                                          <div className="font-medium">{assignment.site?.site_name || siteName}</div>
+                                          <div>{assignment.startTime}-{assignment.endTime}</div>
+                                          {assignment.notes && (
+                                            <div className="truncate text-gray-500">{assignment.notes}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -759,9 +864,32 @@ const Diary = () => {
           </div>
 
           {/* Modals */}
-          <AssignmentModal />
-          <DeleteModal />
-          <NotificationComponent />
+          <AssignmentModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            currentAssignment={currentAssignment}
+            setCurrentAssignment={setCurrentAssignment}
+            engineers={engineers}
+            siteName={siteName}
+            call_no={call_no}
+            timeSlots={timeSlots}
+            hasRequiredParams={hasRequiredParams}
+            hasInitialAssignment={hasInitialAssignment}
+            engineer_id={engineer_id}
+            onSave={handleSaveAssignment}
+            onDelete={() => setIsDeleteModalOpen(true)}
+          />
+          
+          <DeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={handleDeleteAssignment}
+          />
+          
+          <NotificationComponent
+            notification={notification}
+            onClose={() => setNotification(null)}
+          />
         </main>
       </div>
     </div>

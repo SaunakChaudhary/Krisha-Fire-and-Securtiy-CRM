@@ -31,8 +31,15 @@ const diarySchema = new mongoose.Schema({
     required: [true, 'Engineer is required'],
     validate: {
       validator: async function(value) {
-        const user = await mongoose.model('User').findById(value);
-        return user && user.accesstype_id?.name === 'Engineer';
+        const user = await mongoose
+          .model('User')
+          .findById(value)
+          .populate('accesstype_id');
+        // If access type is missing, only validate that the user exists
+        // Otherwise, ensure the user is of type Engineer
+        if (!user) return false;
+        if (!user.accesstype_id) return true;
+        return user.accesstype_id.name === 'Engineer';
       },
       message: 'Invalid engineer reference'
     }
@@ -58,7 +65,11 @@ const diarySchema = new mongoose.Schema({
     match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'],
     validate: {
       validator: function(value) {
-        return this.startTime < value;
+        const [sh, sm] = String(this.startTime || '0:0').split(':').map(v => parseInt(v, 10));
+        const [eh, em] = String(value || '0:0').split(':').map(v => parseInt(v, 10));
+        const startMinutes = (Number.isFinite(sh) ? sh : 0) * 60 + (Number.isFinite(sm) ? sm : 0);
+        const endMinutes = (Number.isFinite(eh) ? eh : 0) * 60 + (Number.isFinite(em) ? em : 0);
+        return endMinutes > startMinutes;
       },
       message: 'End time must be after start time'
     }
@@ -80,15 +91,6 @@ const diarySchema = new mongoose.Schema({
       message: 'Invalid status'
     },
     default: 'scheduled'
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
   }
 }, {
   timestamps: true,
@@ -98,17 +100,19 @@ const diarySchema = new mongoose.Schema({
 
 // Virtual for duration calculation
 diarySchema.virtual('calculatedDuration').get(function() {
-  const start = new Date(`2000-01-01T${this.startTime}:00`);
-  const end = new Date(`2000-01-01T${this.endTime}:00`);
-  const diff = end - start;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const [sh, sm] = String(this.startTime || '0:0').split(':').map(v => parseInt(v, 10));
+  const [eh, em] = String(this.endTime || '0:0').split(':').map(v => parseInt(v, 10));
+  const startMinutes = (Number.isFinite(sh) ? sh : 0) * 60 + (Number.isFinite(sm) ? sm : 0);
+  const endMinutes = (Number.isFinite(eh) ? eh : 0) * 60 + (Number.isFinite(em) ? em : 0);
+  const diffMinutes = Math.max(0, endMinutes - startMinutes);
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
   
   return `${hours > 0 ? `${hours}h ` : ''}${minutes}m`;
 });
 
-// Pre-save hook to calculate duration
-diarySchema.pre('save', function(next) {
+// Pre-validate hook to calculate duration before validation runs
+diarySchema.pre('validate', function(next) {
   if (this.isModified('startTime') || this.isModified('endTime')) {
     this.duration = this.calculatedDuration;
   }

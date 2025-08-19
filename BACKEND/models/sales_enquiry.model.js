@@ -16,7 +16,7 @@ const salesEnquirySchema = new mongoose.Schema(
     },
     site: { type: mongoose.Schema.Types.ObjectId, ref: "Site", required: true },
     referealEngineer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    typeOfWork: { type: mongoose.Schema.Types.ObjectId, ref: "WorkType" },
+    typeOfWork: { type: mongoose.Schema.Types.ObjectId, ref: "ReferenceCode" },
     clientType: { type: String },
     premisesType: { type: String },
     systemType: { type: mongoose.Schema.Types.ObjectId, ref: "System" },

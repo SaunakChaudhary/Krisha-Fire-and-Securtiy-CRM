@@ -2,34 +2,28 @@ const Diary = require("../models/diary.model");
 const Call = require("../models/call.model");
 const mongoose = require("mongoose");
 
-exports.getDiaryEntries = async (req, res) => {
+
+exports.getAllDiaryEntries = async (req, res) => {
   try {
-    const { date, engineerId } = req.query;
-
-    if (!date || !engineerId) {
-      return res.status(400).json({
-        success: false,
-        message: "Date and engineerId are required",
-      });
-    }
-
-    const entries = await Diary.find({
-      engineer: engineerId,
-      date: new Date(date),
-    })
-      .populate("site", "name address")
-      .populate("callLog", "callNumber description")
-      .populate("engineer", "firstname lastname")
-      .sort({ startTime: 1 });
+    // Get all diary entries with full population
+    const entries = await Diary.find({})
+      .populate(
+        "site",
+        "site_name address_line_1 address_line_2 city state postcode"
+      )
+      .populate("callLog", "call_number description priority status")
+      .populate("engineer", "firstname lastname email phone")
+      .sort({ date: -1, startTime: 1 }); // Newest dates first, then by start time
 
     res.status(200).json({
       success: true,
+      count: entries.length,
       data: entries,
     });
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Server error while retrieving diary entries",
       error: err.message,
     });
   }
@@ -40,27 +34,36 @@ exports.createDiaryEntry = async (req, res) => {
   try {
     const { site, callLog, engineer, date, startTime, endTime, notes } =
       req.body;
-    const { userId } = req.params;
+    // createdBy removed from model; no need to require userId
 
-    const callLogId = await Call.findOne({ call_number: callLog });
+    // Accept either call ObjectId or call number
+    let callDoc;
+    if (mongoose.Types.ObjectId.isValid(callLog)) {
+      callDoc = await Call.findById(callLog);
+    } else {
+      callDoc = await Call.findOne({ call_number: callLog });
+    }
+    if (!callDoc) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Call log not found" });
+    }
 
-    console.log(callLogId)
-    
+    console.log(callDoc);
+
     // Check if this is the first assignment for this call log
-    const existingAssignments = await Diary.find({ callLog: callLogId });
+    const existingAssignments = await Diary.find({ callLog: callDoc._id });
     const initialEngineerId = req.query.initialEngineerId;
-
 
     const newEntry = new Diary({
       site,
-      callLog: callLogId._id,
+      callLog: callDoc._id,
       engineer,
       date: new Date(date),
       startTime,
       endTime,
-      duration: "", // Will be calculated by pre-save hook
+      // duration will be calculated automatically in pre-validate hook
       notes,
-      createdBy: userId,
     });
 
     await newEntry.save();
@@ -83,7 +86,26 @@ exports.updateDiaryEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    const userId = updates.userId;
+    // Normalize incoming fields
+    // Convert callLog from call number (string) to ObjectId if needed
+    if (
+      updates.callLog &&
+      typeof updates.callLog === "string" &&
+      !mongoose.Types.ObjectId.isValid(updates.callLog)
+    ) {
+      const callDoc = await Call.findOne({ call_number: updates.callLog });
+      if (!callDoc) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Call log not found" });
+      }
+      updates.callLog = callDoc._id;
+    }
+    // Cast date string to Date
+    if (updates.date && typeof updates.date === "string") {
+      updates.date = new Date(updates.date);
+    }
+    // updatedBy removed from model; ignore userId
 
     // Check if entry exists
     const entry = await Diary.findById(id);
@@ -94,23 +116,11 @@ exports.updateDiaryEntry = async (req, res) => {
       });
     }
 
-    // Prevent changing engineer if it's the initial assignment
-    if (
-      updates.engineer &&
-      entry.engineer.toString() === req.query.initialEngineerId
-    ) {
-      const callLogAssignments = await Diary.find({ callLog: entry.callLog });
-      if (callLogAssignments.length === 1) {
-        return res.status(400).json({
-          success: false,
-          message: "Cannot change engineer for the initial assignment",
-        });
-      }
-    }
+    // Removed restriction on changing engineer for initial assignment
 
     // Apply updates
     Object.assign(entry, updates);
-    entry.updatedBy = userId;
+    // no updatedBy field
     await entry.save();
 
     res.status(200).json({
@@ -140,18 +150,9 @@ exports.deleteDiaryEntry = async (req, res) => {
       });
     }
 
-    // Check if this is the initial assignment
-    if (entry.engineer.toString() === req.query.initialEngineerId) {
-      const callLogAssignments = await Diary.find({ callLog: entry.callLog });
-      if (callLogAssignments.length === 1) {
-        return res.status(400).json({
-          success: false,
-          message: "Cannot delete the initial assignment",
-        });
-      }
-    }
+    // Removed restriction preventing deletion of initial assignment
 
-    await entry.remove();
+    await Diary.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
@@ -171,11 +172,16 @@ exports.getAssignmentsByCallLog = async (req, res) => {
   try {
     const { callLogId } = req.params;
 
-    const callLog = await Call.find({ call_number: callLogId });
+    const callLog = await Call.findOne({ call_number: callLogId });
+    if (!callLog) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Call log not found" });
+    }
 
     const assignments = await Diary.find({ callLog: callLog._id })
       .populate("engineer", "firstname lastname")
-      .populate("site", "name")
+      .populate("site", "site_name")
       .sort({ date: 1, startTime: 1 });
 
     res.status(200).json({
