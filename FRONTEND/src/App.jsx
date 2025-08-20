@@ -51,6 +51,7 @@ import CallList from './pages/Calls'
 import ViewCalls from './pages/ViewCalls'
 import EditCalls from './pages/EditCalls'
 import Diary from './pages/Diary'
+import TaskDetails from './pages/Engineer/TaskDetails'
 
 const App = () => {
   return (
@@ -136,6 +137,7 @@ const App = () => {
       <Route element={<ProtectedRoute allowedRoles={["Engineer"]} />}>
         {/* Engineer Panel */}
         <Route path="/engineer/dashboard" element={<EngineerDashboard />} />
+        <Route path="/engineer/task/:taskId" element={<TaskDetails />} />
       </Route>
 
 

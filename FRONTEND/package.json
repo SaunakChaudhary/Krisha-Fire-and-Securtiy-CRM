@@ -27,6 +27,7 @@
     "react-loading-indicator": "^1.0.2",
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.7.0",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "recharts": "^3.1.0",
     "tailwindcss": "^4.1.11",
     "xlsx": "^0.18.5"

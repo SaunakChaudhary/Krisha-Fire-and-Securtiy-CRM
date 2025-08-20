@@ -2,18 +2,22 @@ const Diary = require("../models/diary.model");
 const Call = require("../models/call.model");
 const mongoose = require("mongoose");
 
-
 exports.getAllDiaryEntries = async (req, res) => {
   try {
     // Get all diary entries with full population
     const entries = await Diary.find({})
-      .populate(
-        "site",
-        "site_name address_line_1 address_line_2 city state postcode"
-      )
-      .populate("callLog", "call_number description priority status")
-      .populate("engineer", "firstname lastname email phone")
-      .sort({ date: -1, startTime: 1 }); // Newest dates first, then by start time
+      .populate({
+        path: "site",
+        populate: {
+          path: "site_systems",
+          populate: {
+            path: "system_id",
+          },
+        },
+      })
+      .populate("callLog")
+      .populate("engineer")
+      .sort({ date: -1, startTime: 1 });
 
     res.status(200).json({
       success: true,
@@ -34,7 +38,6 @@ exports.createDiaryEntry = async (req, res) => {
   try {
     const { site, callLog, engineer, date, startTime, endTime, notes } =
       req.body;
-    // createdBy removed from model; no need to require userId
 
     // Accept either call ObjectId or call number
     let callDoc;
@@ -48,8 +51,6 @@ exports.createDiaryEntry = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Call log not found" });
     }
-
-    console.log(callDoc);
 
     // Check if this is the first assignment for this call log
     const existingAssignments = await Diary.find({ callLog: callDoc._id });
@@ -86,8 +87,7 @@ exports.updateDiaryEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    // Normalize incoming fields
-    // Convert callLog from call number (string) to ObjectId if needed
+
     if (
       updates.callLog &&
       typeof updates.callLog === "string" &&
@@ -105,7 +105,6 @@ exports.updateDiaryEntry = async (req, res) => {
     if (updates.date && typeof updates.date === "string") {
       updates.date = new Date(updates.date);
     }
-    // updatedBy removed from model; ignore userId
 
     // Check if entry exists
     const entry = await Diary.findById(id);
@@ -115,8 +114,6 @@ exports.updateDiaryEntry = async (req, res) => {
         message: "Diary entry not found",
       });
     }
-
-    // Removed restriction on changing engineer for initial assignment
 
     // Apply updates
     Object.assign(entry, updates);
