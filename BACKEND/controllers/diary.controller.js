@@ -5,19 +5,27 @@ const mongoose = require("mongoose");
 exports.getAllDiaryEntries = async (req, res) => {
   try {
     // Get all diary entries with full population
-    const entries = await Diary.find({})
-      .populate({
-        path: "site",
-        populate: {
-          path: "site_systems",
-          populate: {
-            path: "system_id",
-          },
-        },
-      })
-      .populate("callLog")
-      .populate("engineer")
-      .sort({ date: -1, startTime: 1 });
+   const entries = await Diary.find({})
+  .populate({
+    path: "site",
+    populate: {
+      path: "site_systems",
+      populate: [
+        { path: "system_id" },
+        { path: "installed_by" }
+      ],
+    },
+  })
+  .populate({
+    path: "callLog",
+    populate: [
+      { path: "logged_by" },
+      { path: "call_type" }
+    ],
+  })
+  .populate("engineer")
+  .sort({ date: -1, startTime: 1 });
+
 
     res.status(200).json({
       success: true,

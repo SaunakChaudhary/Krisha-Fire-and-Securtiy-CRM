@@ -96,7 +96,7 @@ const AddCall = () => {
                     usersData
                 ] = await Promise.all([
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callType`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/work-type/`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callReason`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callWaitingReason`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)

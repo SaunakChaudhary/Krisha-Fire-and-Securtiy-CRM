@@ -44,17 +44,6 @@ const TaskDetails = () => {
   const engineerSigPadRef = useRef();
   const customerSigPadRef = useRef();
 
-  // Dummy checklist questions
-  const checklistQuestions = [
-    "System functioning properly",
-    "All connections secure",
-    "No visible damage to equipment",
-    "Tested all alarm functions",
-    "Cleaned sensors and components",
-    "Updated system software if needed",
-    "Documented all work performed"
-  ];
-
   // Dummy documents for engineer cabinet
   const engineerDocuments = [
     { name: "Installation Manual.pdf", type: "PDF", size: "2.4 MB" },
@@ -73,18 +62,19 @@ const TaskDetails = () => {
         );
 
         const data = await res.json();
-        if (data.success) {                    
+        if (data.success) {
           const userTask = data.data.find(
             (entry) => entry._id.toString() === taskId.toString()
           );
-          
+
+          console.log(userTask)
           // Verify this task belongs to the logged-in user
           if (userTask && userTask.engineer?._id.toString() !== user.user._id.toString()) {
             setError("You don't have permission to view this task");
             setLoading(false);
             return;
           }
-          
+
           setTask(userTask);
         } else {
           setError("Task not found");
@@ -96,7 +86,7 @@ const TaskDetails = () => {
         setLoading(false);
       }
     };
-    
+
     if (taskId) {
       fetchTaskDetails();
     }
@@ -142,7 +132,7 @@ const TaskDetails = () => {
       alert("Please provide a signature first.");
       return;
     }
-    
+
     const signatureData = engineerSigPadRef.current.toDataURL();
     localStorage.setItem(`engineerSignature_${taskId}`, signatureData);
     setShowEngineerSignaturePad(false);
@@ -159,7 +149,7 @@ const TaskDetails = () => {
       alert("Please provide a signature first.");
       return;
     }
-    
+
     const signatureData = customerSigPadRef.current.toDataURL();
     localStorage.setItem(`customerSignature_${taskId}`, signatureData);
     setShowCustomerSignaturePad(false);
@@ -189,11 +179,10 @@ const TaskDetails = () => {
   const TabButton = ({ id, icon, label, isActive }) => (
     <button
       onClick={() => setActiveTab(id)}
-      className={`flex items-center px-4 py-2 rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
-        isActive 
-          ? "border-red-500 text-red-600 bg-white" 
-          : "border-transparent text-gray-500 hover:text-red-700 hover:border-red-300"
-      }`}
+      className={`flex items-center px-4 py-2 rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${isActive
+        ? "border-red-500 text-red-600 bg-white"
+        : "border-transparent text-gray-500 hover:text-red-700 hover:border-red-300"
+        }`}
     >
       {icon}
       <span className="ml-2 font-medium">{label}</span>
@@ -237,7 +226,7 @@ const TaskDetails = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <EngineerNavbar />
-      
+
       <main className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Back button */}
@@ -260,7 +249,7 @@ const TaskDetails = () => {
                 <span className="ml-2 font-medium">{mapStatusToUI(task.status)}</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center text-gray-600">
                 <Calendar className="h-5 w-5 mr-2" />
@@ -271,7 +260,7 @@ const TaskDetails = () => {
                 <span>{task.startTime} - {task.endTime} ({task.duration})</span>
               </div>
             </div>
-            
+
             <div className="flex items-center text-gray-600 mb-4">
               <AlertCircle className="h-5 w-5 mr-2" />
               <span>Priority: {task.callLog?.priority}/100</span>
@@ -341,7 +330,7 @@ const TaskDetails = () => {
                         <p>{task.site?.city}, {task.site?.state} {task.site?.postcode}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h3 className="font-medium text-gray-700">Contact Information</h3>
                       <div className="text-gray-600">
@@ -353,7 +342,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Call Details</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -364,7 +353,7 @@ const TaskDetails = () => {
                         <p>Logged Date: {new Date(task.callLog?.logged_date).toLocaleString()}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="text-gray-600">
                         <p>Caller: {task.callLog?.caller_name}</p>
@@ -374,7 +363,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {task.notes && (
                   <div>
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Notes</h2>
@@ -398,7 +387,7 @@ const TaskDetails = () => {
                         <p>Status: {task.site?.status}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h3 className="font-medium text-gray-700">Address</h3>
                       <div className="text-gray-600">
@@ -411,7 +400,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -423,7 +412,7 @@ const TaskDetails = () => {
                         <p>Email: {task.site?.contact_email}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <h3 className="font-medium text-gray-700">Additional Information</h3>
                       <div className="text-gray-600">
@@ -434,7 +423,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {(task.site?.admin_remarks || task.site?.site_remarks) && (
                   <div>
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Remarks</h2>
@@ -445,7 +434,7 @@ const TaskDetails = () => {
                           <p className="text-gray-600">{task.site.admin_remarks}</p>
                         </div>
                       )}
-                      
+
                       {task.site?.site_remarks && (
                         <div>
                           <h3 className="font-medium text-gray-700">Site Remarks</h3>
@@ -459,156 +448,155 @@ const TaskDetails = () => {
             )}
 
             {/* System Information Tab */}
-{/* System Information Tab */}
-{activeTab === "system" && task.callLog?.site_system && (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">System Information</h2>
-      
-      {/* Find the specific system from site_systems that matches the callLog's site_system */}
-      {(() => {
-        const systemId = task.callLog.site_system;
-        const system = task.site?.site_systems?.find(sys => 
-          sys.system_id._id === systemId || sys._id === systemId
-        );
-        
-        return system ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-700 mb-2">System Details</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">System Name:</span>
-                      <span className="font-medium">{system.system_id.systemName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">System Code:</span>
-                      <span className="font-medium">{system.system_id.systemCode}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        {system.status}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Installation Date:</span>
-                      <span>{new Date(system.date_of_install).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Warranty Until:</span>
-                      <span>{new Date(system.warranty_date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Rented:</span>
-                      <span>{system.rented ? "Yes" : "No"}</span>
-                    </div>
-                    {system.installed_by && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Installed By:</span>
-                        <span>{system.installed_by}</span>
+            {activeTab === "system" && task.callLog?.site_system && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4">System Information</h2>
+
+                  {/* Find the specific system from site_systems that matches the callLog's site_system */}
+                  {(() => {
+                    const systemId = task.callLog.site_system;
+                    const system = task.site?.site_systems?.find(sys =>
+                      sys.system_id._id === systemId || sys._id === systemId
+                    );
+
+                    return system ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-medium text-gray-700 mb-2">System Details</h3>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">System Name:</span>
+                                  <span className="font-medium">{system.system_id.systemName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">System Code:</span>
+                                  <span className="font-medium">{system.system_id.systemCode}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Status:</span>
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                    {system.status}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Installation Date:</span>
+                                  <span>{new Date(system.date_of_install).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Warranty Until:</span>
+                                  <span>{new Date(system.warranty_date).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Rented:</span>
+                                  <span>{system.rented ? "Yes" : "No"}</span>
+                                </div>
+                                {system.installed_by && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Installed By:</span>
+                                    <span>{system.installed_by.firstname} {system.installed_by.lastname}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-medium text-gray-700 mb-2">System Description</h3>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-gray-600">
+                                {system.system_id.description || "No description available for this system."}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="font-medium text-gray-700 mb-2">Additional Information</h3>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Category:</span>
+                                  <span>{system.system_id.productFilterGroup}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Alarm Type:</span>
+                                  <span>{system.system_id.alarmReportingCategory}</span>
+                                </div>
+                                {system.date_of_sale && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Date of Sale:</span>
+                                    <span>{new Date(system.date_of_sale).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                                {system.takeover_date && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Takeover Date:</span>
+                                    <span>{new Date(system.takeover_date).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    ) : (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+                          <p className="text-yellow-700">System information not found for this call.</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Show all systems at the site as additional information */}
+                {task.site?.site_systems && task.site.site_systems.length > 0 && (
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-800 mb-4">All Systems at This Site</h3>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 text-left text-gray-600">
+                            <th className="p-3">System Name</th>
+                            <th className="p-3">Status</th>
+                            <th className="p-3">Installation Date</th>
+                            <th className="p-3">Warranty Until</th>
+                            <th className="p-3">Rented</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {task.site.site_systems.map((system, index) => (
+                            <tr key={index} className="border-b hover:bg-gray-50">
+                              <td className="p-3">{system.system_id.systemName}</td>
+                              <td className="p-3">
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                  {system.status}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                {system.date_of_install ? new Date(system.date_of_install).toLocaleDateString() : "N/A"}
+                              </td>
+                              <td className="p-3">
+                                {system.warranty_date ? new Date(system.warranty_date).toLocaleDateString() : "N/A"}
+                              </td>
+                              <td className="p-3">
+                                {system.rented ? "Yes" : "No"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-700 mb-2">System Description</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-600">
-                    {system.system_id.description || "No description available for this system."}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-700 mb-2">Additional Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Category:</span>
-                      <span>{system.system_id.productFilterGroup}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Alarm Type:</span>
-                      <span>{system.system_id.alarmReportingCategory}</span>
-                    </div>
-                    {system.date_of_sale && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Date of Sale:</span>
-                        <span>{new Date(system.date_of_sale).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    {system.takeover_date && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Takeover Date:</span>
-                        <span>{new Date(system.takeover_date).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
-              <p className="text-yellow-700">System information not found for this call.</p>
-            </div>
-          </div>
-        );
-      })()}
-    </div>
-    
-    {/* Show all systems at the site as additional information */}
-    {task.site?.site_systems && task.site.site_systems.length > 0 && (
-      <div>
-        <h3 className="text-md font-semibold text-gray-800 mb-4">All Systems at This Site</h3>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-left text-gray-600">
-                <th className="p-3">System Name</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Installation Date</th>
-                <th className="p-3">Warranty Until</th>
-                <th className="p-3">Rented</th>
-              </tr>
-            </thead>
-            <tbody>
-              {task.site.site_systems.map((system, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{system.system_id.systemName}</td>
-                  <td className="p-3">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                      {system.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {system.date_of_install ? new Date(system.date_of_install).toLocaleDateString() : "N/A"}
-                  </td>
-                  <td className="p-3">
-                    {system.warranty_date ? new Date(system.warranty_date).toLocaleDateString() : "N/A"}
-                  </td>
-                  <td className="p-3">
-                    {system.rented ? "Yes" : "No"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+            )}
 
             {/* Call Information Tab */}
             {activeTab === "call" && (
@@ -625,17 +613,17 @@ const TaskDetails = () => {
                         <p>Deadline: {new Date(task.callLog?.deadline).toLocaleString()}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="text-gray-600">
                         <p>Next Action: {new Date(task.callLog?.next_action).toLocaleString()}</p>
                         <p>Assign Date: {new Date(task.callLog?.assign_date).toLocaleString()}</p>
-                        <p>Logged By: {task.callLog?.logged_by}</p>
+                        <p>Logged By: {task.callLog?.logged_by?.firstname}</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Caller Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -648,7 +636,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Billing Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -662,7 +650,7 @@ const TaskDetails = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {task.callLog?.invoice_no && (
                         <div className="text-gray-600">
@@ -675,7 +663,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {task.callLog?.remarks && (
                   <div>
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Remarks</h2>
@@ -689,26 +677,26 @@ const TaskDetails = () => {
             {activeTab === "checklist" && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Maintenance Checklist</h2>
-                
+
                 <div className="space-y-4">
-                  {checklistQuestions.map((question, index) => (
+                  {task.callLog.call_type.associatedDocketTypes.map((question, index) => (
                     <div key={index} className="flex items-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         id={`check-${index}`}
                         className="h-4 w-4 text-blue-600 rounded"
                       />
                       <label htmlFor={`check-${index}`} className="ml-2 text-gray-700">
-                        {question}
+                        {question.name}
                       </label>
                     </div>
                   ))}
-                  
+
                   <div className="mt-4">
                     <label htmlFor="additional-notes" className="block text-sm font-medium text-gray-700 mb-2">
                       Additional Notes
                     </label>
-                    <textarea 
+                    <textarea
                       id="additional-notes"
                       rows="3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -723,7 +711,7 @@ const TaskDetails = () => {
             {activeTab === "documents" && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Engineer Cabinet</h2>
-                
+
                 <div className="space-y-3">
                   {engineerDocuments.map((doc, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -748,7 +736,7 @@ const TaskDetails = () => {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Signatures</h2>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Engineer Signature */}
                     <div>
@@ -814,7 +802,7 @@ const TaskDetails = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Customer Signature */}
                     <div>
                       <h3 className="font-medium text-gray-700 mb-2">Customer Signature</h3>
@@ -881,10 +869,10 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">Customer Feedback</h2>
-                  
+
                   {/* Customer Rating */}
                   <div className="mb-4">
                     <h3 className="font-medium text-gray-700 mb-2">Rating</h3>
@@ -904,13 +892,13 @@ const TaskDetails = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Customer Review */}
                   <div>
                     <label htmlFor="customer-review" className="block text-sm font-medium text-gray-700 mb-2">
                       Comments
                     </label>
-                    <textarea 
+                    <textarea
                       id="customer-review"
                       rows="3"
                       value={customerReview}
@@ -920,7 +908,7 @@ const TaskDetails = () => {
                     ></textarea>
                   </div>
                 </div>
-                
+
                 {/* Submit Button */}
                 <div className="flex justify-end mt-6">
                   <button

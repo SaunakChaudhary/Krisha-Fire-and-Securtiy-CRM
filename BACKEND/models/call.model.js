@@ -20,7 +20,7 @@ const CallSchema = new Schema(
     },
     call_type: {
       type: Schema.Types.ObjectId,
-      ref: "ReferenceCode",
+      ref: "WorkType",
       required: true,
     },
     call_reason: {
