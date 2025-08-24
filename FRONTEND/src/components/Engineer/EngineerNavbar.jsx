@@ -2,13 +2,30 @@ import { LogOut, User, Menu, X, ChevronLeft } from 'lucide-react'
 import React, { useContext, useState } from 'react'
 import { AuthContext } from "../../Context/AuthContext";
 import logo from '../../assets/logo.png';
+import { useNavigate } from 'react-router-dom';
 
 const EngineerNavbar = () => {
-    const { user, logout } = useContext(AuthContext);
+    const { user,setUser } = useContext(AuthContext);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
+
+            if (res.ok) {
+                setUser(null);
+                navigate("/");
+            } else {
+                const data = await res.json();
+                console.error("Logout failed:", data.message);
+            }
+        } catch (err) {
+            console.error("Error during logout:", err);
+        }
     };
 
     return (

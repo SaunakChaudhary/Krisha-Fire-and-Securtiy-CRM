@@ -41,6 +41,11 @@ const Login = () => {
             toast.success('Login Successful!');
             setUser(data.user);
             if (data.user.accesstype_id.name === "Engineer") {
+                setUser({
+                    user: data.user,
+                    role: data.role,
+                    engineerData: data.engineer || null,
+                });
                 navigate('/engineer/dashboard');
             } else {
                 return navigate('/dashboard');

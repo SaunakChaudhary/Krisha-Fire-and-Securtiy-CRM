@@ -24,26 +24,29 @@ import {
   MapPin,
   Notebook,
   Info,
+  CheckCircle,
+  CheckCircle2,
+  Truck,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../Context/AuthContext";
 
 // Move AssignmentModal outside the main component to prevent re-renders
-const AssignmentModal = ({ 
-  isOpen, 
-  onClose, 
-  currentAssignment, 
-  setCurrentAssignment, 
-  engineers, 
-  siteName, 
-  call_no, 
-  timeSlots, 
-  hasRequiredParams, 
-  hasInitialAssignment, 
-  engineer_id, 
-  onSave, 
-  onDelete 
+const AssignmentModal = ({
+  isOpen,
+  onClose,
+  currentAssignment,
+  setCurrentAssignment,
+  engineers,
+  siteName,
+  call_no,
+  timeSlots,
+  hasRequiredParams,
+  hasInitialAssignment,
+  engineer_id,
+  onSave,
+  onDelete
 }) => {
   if (!isOpen) return null;
 
@@ -60,7 +63,6 @@ const AssignmentModal = ({
 
     return true;
   };
-
   return (
     <div className="fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -803,13 +805,16 @@ const Diary = () => {
                       </thead>
                       <tbody className="divide-y divide-gray-200 bg-white">
                         {engineers.map((engineer) => {
-                          const engineerAssignments = assignments.filter(a =>
-                            a.engineer._id === engineer._id &&
-                            format(new Date(a.date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
+                          const engineerAssignments = assignments.filter(
+                            (a) =>
+                              a.engineer._id === engineer._id &&
+                              format(new Date(a.date), "yyyy-MM-dd") ===
+                              format(currentDate, "yyyy-MM-dd")
                           );
 
                           return (
                             <tr key={engineer._id}>
+                              {/* Engineer name column */}
                               <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 sticky left-0 bg-white z-10">
                                 <div className="font-medium">
                                   {engineer.firstname + " " + engineer.lastname}
@@ -819,37 +824,93 @@ const Diary = () => {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-gray-500 text-xs">{engineer.accesstype_id?.name || "Engineer"}</div>
+                                <div className="text-gray-500 text-xs">
+                                  {engineer.accesstype_id?.name || "Engineer"}
+                                </div>
                               </td>
+
+                              {/* Time slots */}
                               {timeSlots.map((timeSlot) => {
-                                const assignment = engineerAssignments.find(a => {
+
+                                const toMinutes = (time) => {
+                                  const [h, m] = time.split(":").map(Number);
+                                  return h * 60 + m;
+                                };
+
+                                // auto detect slot interval (e.g. 30 min)
+                                const slotInterval = (() => {
+                                  if (timeSlots.length > 1) {
+                                    return toMinutes(timeSlots[1]) - toMinutes(timeSlots[0]);
+                                  }
+                                  return 30; // fallback default
+                                })();
+                                // Check if assignment starts here
+                                const assignment = engineerAssignments.find(
+                                  (a) => a.startTime === timeSlot
+                                );
+                                if (assignment) {
                                   const slotMin = toMinutes(timeSlot);
-                                  const startMin = toMinutes(a.startTime);
-                                  const endMin = toMinutes(a.endTime);
-                                  return slotMin >= startMin && slotMin < endMin;
+                                  const startMin = toMinutes(assignment.startTime);
+                                  const endMin = toMinutes(assignment.endTime);
+
+                                  const colSpan = (endMin - startMin) / slotInterval; // e.g. 30 min interval
+
+                                  return (
+                                    <td
+                                      key={`${engineer._id}-${timeSlot}`}
+                                      colSpan={colSpan}
+                                      className="relative px-4 py-5 text-sm text-center bg-blue-50 cursor-pointer rounded-lg shadow-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                      onClick={() => handleSlotClick(engineer._id, timeSlot)}
+                                    >
+                                      <div className="flex flex-col items-center justify-center">
+                                        <div className="flex items-center space-x-2 justify-center">
+                                          {assignment.status === "scheduled" ? (
+                                            <Calendar className="h-6 w-6 text-blue-500 mb-1" />
+                                          ) : assignment.status === "accepted" ? (
+                                            <CheckCircle className="h-6 w-6 text-green-500 mb-1" />
+                                          ) : assignment.status === "on-route" ? (
+                                            <Truck className="h-6 w-6 text-purple-500 mb-1 animate-pulse" />
+                                          ) : assignment.status === "on-site" ? (
+                                            <MapPin className="h-6 w-6 text-orange-500 mb-1 animate-bounce" />
+                                          ) : assignment.status === "completed" ? (
+                                            <CheckCircle2 className="h-6 w-6 text-green-600 mb-1" />
+                                          ) : assignment.status === "pending" ? (
+                                            <Clock className="h-6 w-6 text-yellow-500 mb-1" />
+                                          ) : assignment.status === "cancelled" ? (
+                                            <XCircle className="h-6 w-6 text-red-600 mb-1" />
+                                          ) : (
+                                            <HelpCircle className="h-6 w-6 text-gray-400 mb-1" />
+                                          )}
+                                          <div className="flex flex-col text-center">
+                                            <span className="font-semibold text-sm text-gray-800">{`#${assignment.callLog.call_number}`}</span>
+                                            <span className="text-xs capitalize text-gray-600">{assignment.status}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                  );
+                                }
+
+                                // Check if inside some assignment (skip)
+                                const insideAssignment = engineerAssignments.some((a) => {
+                                  const slotMin = toMinutes(timeSlot);
+                                  return (
+                                    slotMin > toMinutes(a.startTime) && slotMin < toMinutes(a.endTime)
+                                  );
                                 });
 
-                                const isFirstHour = assignment && timeSlot === assignment.startTime;
+                                if (insideAssignment) {
+                                  return null; // skip
+                                }
 
+                                // Empty slot
                                 return (
                                   <td
                                     key={`${engineer._id}-${timeSlot}`}
                                     onClick={() => handleSlotClick(engineer._id, timeSlot)}
-                                    className={`relative px-3 py-4 text-sm cursor-pointer 
-                                      ${assignment ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
-                                  >
-                                    {assignment && isFirstHour && (
-                                      <div className="absolute inset-0 flex items-center justify-center p-1">
-                                        <div className="text-xs text-center">
-                                          <div className="font-medium">{assignment.site?.site_name || siteName}</div>
-                                          <div>{assignment.startTime}-{assignment.endTime}</div>
-                                          {assignment.notes && (
-                                            <div className="truncate text-gray-500">{assignment.notes}</div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </td>
+                                    className="relative px-3 py-4 text-sm cursor-pointer hover:bg-gray-50"
+                                  />
                                 );
                               })}
                             </tr>
@@ -879,13 +940,13 @@ const Diary = () => {
             onSave={handleSaveAssignment}
             onDelete={() => setIsDeleteModalOpen(true)}
           />
-          
+
           <DeleteModal
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
             onConfirm={handleDeleteAssignment}
           />
-          
+
           <NotificationComponent
             notification={notification}
             onClose={() => setNotification(null)}

@@ -55,6 +55,24 @@ const EngineerDashboard = () => {
     }
   };
 
+  // Get available status options based on current status
+  const getAvailableStatusOptions = (currentStatus) => {
+    switch (currentStatus) {
+      case "Pending":
+        return ["Pending", "Accepted"];
+      case "Accepted":
+        return ["Accepted", "On Route"];
+      case "On Route":
+        return ["On Route", "On Site"];
+      case "On Site":
+        return ["On Site", "Completed"];
+      case "Completed":
+        return ["Completed"];
+      default:
+        return ["Pending"];
+    }
+  };
+
   // Check if a task has expired
   const isTaskExpired = (taskDate, taskStatus) => {
     const today = new Date();
@@ -185,14 +203,7 @@ const EngineerDashboard = () => {
   const pendingTasks = activeTasks.filter((t) => t.status === "Pending").length;
   const onRouteTasks = activeTasks.filter((t) => t.status === "On Route").length;
   const acceptedTasks = activeTasks.filter((t) => t.status === "Accepted").length;
-
-  const statusOptions = [
-    "Pending",
-    "Accepted",
-    "On Route",
-    "On Site",
-    "Completed",
-  ];
+  const onSiteTasks = activeTasks.filter((t) => t.status === "On Site").length;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -214,19 +225,19 @@ const EngineerDashboard = () => {
         ) : (
           <>
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-              <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
-                <CheckCircle className="h-8 w-8 text-green-500" />
-                <div>
-                  <p className="text-gray-500 text-sm">Completed</p>
-                  <p className="text-xl font-bold">{completedTasks}</p>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
               <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
                 <Clock className="h-8 w-8 text-blue-500" />
                 <div>
                   <p className="text-gray-500 text-sm">Pending</p>
                   <p className="text-xl font-bold">{pendingTasks}</p>
+                </div>
+              </div>
+              <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
+                <User className="h-8 w-8 text-purple-500" />
+                <div>
+                  <p className="text-gray-500 text-sm">Accepted</p>
+                  <p className="text-xl font-bold">{acceptedTasks}</p>
                 </div>
               </div>
               <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
@@ -237,10 +248,17 @@ const EngineerDashboard = () => {
                 </div>
               </div>
               <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
-                <User className="h-8 w-8 text-purple-500" />
+                <User className="h-8 w-8 text-orange-500" />
                 <div>
-                  <p className="text-gray-500 text-sm">Accepted</p>
-                  <p className="text-xl font-bold">{acceptedTasks}</p>
+                  <p className="text-gray-500 text-sm">On Site</p>
+                  <p className="text-xl font-bold">{onSiteTasks}</p>
+                </div>
+              </div>
+              <div className="bg-white shadow rounded-xl p-4 flex items-center space-x-3">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-gray-500 text-sm">Completed</p>
+                  <p className="text-xl font-bold">{completedTasks}</p>
                 </div>
               </div>
             </div>
@@ -308,46 +326,52 @@ const EngineerDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {activeTasks.map((task) => (
-                        <tr key={task.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3">{task.site}</td>
-                          <td className="p-3">{task.job}</td>
-                          <td className="p-3">{task.date}</td>
-                          <td className="p-3">
-                            <select
-                              value={task.status}
-                              onChange={(e) =>
-                                updateTaskStatus(task.id, e.target.value)
-                              }
-                              className={`font-medium px-2 py-1 rounded ${
-                                task.status === "Completed"
-                                  ? "bg-green-100 text-green-800"
-                                  : task.status === "Pending"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : task.status === "On Route"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : task.status === "Accepted"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {statusOptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="p-3">
-                            <button
-                              onClick={() => viewTaskDetails(task)}
-                              className="text-blue-600 hover:text-blue-800 flex items-center"
-                            >
-                              View Details <ChevronRight className="h-4 w-4 ml-1" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {activeTasks.map((task) => {
+                        const availableOptions = getAvailableStatusOptions(task.status);
+                        
+                        return (
+                          <tr key={task.id} className="border-b hover:bg-gray-50">
+                            <td className="p-3">{task.site}</td>
+                            <td className="p-3">{task.job}</td>
+                            <td className="p-3">{task.date}</td>
+                            <td className="p-3">
+                              <select
+                                value={task.status}
+                                onChange={(e) =>
+                                  updateTaskStatus(task.id, e.target.value)
+                                }
+                                className={`font-medium px-2 py-1 rounded ${
+                                  task.status === "Completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : task.status === "Pending"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : task.status === "On Route"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : task.status === "Accepted"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : task.status === "On Site"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {availableOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="p-3">
+                              <button
+                                onClick={() => viewTaskDetails(task)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center"
+                              >
+                                View Details <ChevronRight className="h-4 w-4 ml-1" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
