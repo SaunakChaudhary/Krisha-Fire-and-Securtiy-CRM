@@ -42,6 +42,7 @@ const JobCostingRoutes = require("./routes/jobcosting.routes");
 const CallRoutes = require("./routes/call.routes");
 const DiaryRoutes = require("./routes/diary.routes");
 const TaskReportRoutes = require("./routes/taskReport.routes");
+const purchaseOrderRoutes = require("./routes/purchaseorder.routes");
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/access-types", UserAccessRouter);
@@ -60,6 +61,7 @@ app.use("/api/job-costing", JobCostingRoutes);
 app.use("/api/calls", CallRoutes);
 app.use("/api/diary", DiaryRoutes);
 app.use("/api/taskReport", TaskReportRoutes);
+app.use("/api/purchase-order", purchaseOrderRoutes);
 
 DB()
   .then(async () => {

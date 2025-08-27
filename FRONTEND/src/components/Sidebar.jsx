@@ -167,8 +167,8 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             icon={<ShoppingCart size={18} />}
                             label="Manage Purchase Order"
                             subItems={[
-                                { icon: <Search size={16} />, label: 'Search' },
-                                { icon: <UserPlus size={16} />, label: 'Add Purchase Order' }
+                                { icon: <Search size={16} />, label: 'Search' , link:'/manage-purchase-order'},
+                                { icon: <UserPlus size={16} />, label: 'Add Purchase Order' , link: '/add-purchase-order'}
                             ]}
                         />
 

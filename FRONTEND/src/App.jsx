@@ -52,6 +52,10 @@ import ViewCalls from './pages/ViewCalls'
 import EditCalls from './pages/EditCalls'
 import Diary from './pages/Diary'
 import TaskDetails from './pages/Engineer/TaskDetails'
+import AddPurchaseOrder from './pages/AddPurchaseOrder'
+import PurchaseOrderManage from './pages/ManagePurchaseOrder'
+import ViewPurchaseOrderDetails from './pages/ViewPurchaseOrderDetails'
+import EditPurchaseOrder from './pages/EditPurchaseOrder'
 
 const App = () => {
   return (
@@ -121,6 +125,12 @@ const App = () => {
         <Route path="/search-supplier" element={<SearchSupplier />} />
         <Route path="/view-supplier/:id" element={<ViewSupplier />} />
         <Route path="/edit-supplier/:id" element={<EditSupplier />} />
+
+        {/* Purchase Order */}
+        <Route path="/add-purchase-order" element={<AddPurchaseOrder />} />
+        <Route path="/manage-purchase-order" element={<PurchaseOrderManage />} />
+        <Route path="/purchase-orders/view/:id" element={<ViewPurchaseOrderDetails />} />
+        <Route path="/purchase-orders/edit/:id" element={<EditPurchaseOrder />} />
 
         {/* Company Codes */}
         <Route path="/product-code" element={<ProductCode />} />
