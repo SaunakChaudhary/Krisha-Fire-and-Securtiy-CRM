@@ -130,7 +130,7 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             icon={<Wrench size={18} />}
                             label="Service & Maintenance"
                             subItems={[
-                                { icon: <Search size={16} />, label: 'Search Call', link:'/calls' },
+                                { icon: <Search size={16} />, label: 'Search Call', link: '/calls' },
                                 { icon: <UserPlus size={16} />, label: 'Add Call', link: '/add-call' },
                                 { icon: <CalendarDays size={16} />, label: 'Preventative Maintenance' }
                             ]}
@@ -155,9 +155,8 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             icon={<ClipboardList size={18} />}
                             label="Manage Stock"
                             subItems={[
-                                { icon: <FileText size={16} />, label: 'Price List' },
-                                { icon: <FileText size={16} />, label: 'Delivery Chalan' },
-                                { icon: <BarChart3 size={16} />, label: 'Stock Report' }
+                                { icon: <FileText size={16} />, label: 'Price List', link: "/price-list" },
+                                { icon: <FileText size={16} />, label: 'Delivery Chalan', link: "/delivery-chalan" },
                             ]}
                         />
 
@@ -167,8 +166,8 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             icon={<ShoppingCart size={18} />}
                             label="Manage Purchase Order"
                             subItems={[
-                                { icon: <Search size={16} />, label: 'Search' , link:'/manage-purchase-order'},
-                                { icon: <UserPlus size={16} />, label: 'Add Purchase Order' , link: '/add-purchase-order'}
+                                { icon: <Search size={16} />, label: 'Search', link: '/manage-purchase-order' },
+                                { icon: <UserPlus size={16} />, label: 'Add Purchase Order', link: '/add-purchase-order' }
                             ]}
                         />
 
@@ -191,14 +190,14 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             icon={<BarChart3 size={18} />}
                             label="Reports"
                             subItems={[
-                                { icon: <FileText size={16} />, label: 'Site Report' },
-                                { icon: <FileText size={16} />, label: 'Engineer Report' },
-                                { icon: <FileText size={16} />, label: 'Goods Receipt Notes Report' },
-                                { icon: <FileText size={16} />, label: 'Product Code Report' },
-                                { icon: <FileText size={16} />, label: 'Reference Code Report' },
-                                { icon: <FileText size={16} />, label: 'Supplier Report' },
-                                { icon: <FileText size={16} />, label: 'Sales Enquiry Report' },
-                                { icon: <FileText size={16} />, label: 'Delivery Challan Report' }
+                                { icon: <FileText size={16} />, label: 'Site Report', link: '/site-report' },
+                                { icon: <FileText size={16} />, label: 'Engineer Report', link: '/engineer-report' },
+                                { icon: <FileText size={16} />, label: 'Product Code Report', link: '/product-code-report' },
+                                { icon: <FileText size={16} />, label: 'Reference Code Report', link: '/reference-code-report' },
+                                { icon: <FileText size={16} />, label: 'Supplier Report', link: '/supplier-report' },
+                                { icon: <FileText size={16} />, label: 'Sales Enquiry Report', link: '/sales-enquiry-report' },
+                                { icon: <FileText size={16} />, label: 'Purchase Order Report', link: '/purchase-order-report' },
+                                { icon: <FileText size={16} />, label: 'Delivery Challan Report', link: '/delivery-challan-report' }
                             ]}
                         />
 

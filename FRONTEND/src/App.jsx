@@ -56,6 +56,11 @@ import AddPurchaseOrder from './pages/AddPurchaseOrder'
 import PurchaseOrderManage from './pages/ManagePurchaseOrder'
 import ViewPurchaseOrderDetails from './pages/ViewPurchaseOrderDetails'
 import EditPurchaseOrder from './pages/EditPurchaseOrder'
+import PriceList from './pages/PriceList'
+import DeliveryChallan from './pages/DeliveryChallan'
+import EditDeliveryChallan from './pages/EditDeliveryChallan'
+import ViewDeliveryChallan from './pages/ViewDeliveryChallan'
+import SiteReports from './pages/SIteReports'
 
 const App = () => {
   return (
@@ -119,12 +124,17 @@ const App = () => {
         <Route path="/manage-diary" element={<Diary />} />
         <Route path="/manage-diary/:engineer_id/:call_no" element={<Diary />} />
 
-
         {/* Supplier  */}
         <Route path="/add-supplier" element={<AddSupplier />} />
         <Route path="/search-supplier" element={<SearchSupplier />} />
         <Route path="/view-supplier/:id" element={<ViewSupplier />} />
         <Route path="/edit-supplier/:id" element={<EditSupplier />} />
+
+        {/* Manage Stock */}
+        <Route path="/price-list" element={<PriceList />} />
+        <Route path="/delivery-chalan" element={<DeliveryChallan />} />
+        <Route path="/edit-delivery-chalan/:id" element={<EditDeliveryChallan />} />
+        <Route path="/view-delivery-chalan/:id" element={<ViewDeliveryChallan />} />
 
         {/* Purchase Order */}
         <Route path="/add-purchase-order" element={<AddPurchaseOrder />} />
@@ -140,6 +150,10 @@ const App = () => {
         <Route path="/manage-system" element={<System />} />
         <Route path="/docket-type" element={<DocketType />} />
         <Route path="/reference-code" element={<ReferenceCode />} />
+
+
+        {/* Reports */}
+        <Route path="/site-report" element={<SiteReports />} />
 
 
       </Route>
