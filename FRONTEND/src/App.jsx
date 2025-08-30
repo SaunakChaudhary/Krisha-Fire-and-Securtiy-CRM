@@ -61,6 +61,7 @@ import DeliveryChallan from './pages/DeliveryChallan'
 import EditDeliveryChallan from './pages/EditDeliveryChallan'
 import ViewDeliveryChallan from './pages/ViewDeliveryChallan'
 import SiteReports from './pages/SIteReports'
+import EngineerReport from './pages/EngineerReport'
 
 const App = () => {
   return (
@@ -154,6 +155,7 @@ const App = () => {
 
         {/* Reports */}
         <Route path="/site-report" element={<SiteReports />} />
+        <Route path="/engineer-report" element={<EngineerReport />} />
 
 
       </Route>
