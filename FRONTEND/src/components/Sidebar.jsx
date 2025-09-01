@@ -192,8 +192,6 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                             subItems={[
                                 { icon: <FileText size={16} />, label: 'Site Report', link: '/site-report' },
                                 { icon: <FileText size={16} />, label: 'Engineer Report', link: '/engineer-report' },
-                                { icon: <FileText size={16} />, label: 'Product Code Report', link: '/product-code-report' },
-                                { icon: <FileText size={16} />, label: 'Reference Code Report', link: '/reference-code-report' },
                                 { icon: <FileText size={16} />, label: 'Supplier Report', link: '/supplier-report' },
                                 { icon: <FileText size={16} />, label: 'Sales Enquiry Report', link: '/sales-enquiry-report' },
                                 { icon: <FileText size={16} />, label: 'Purchase Order Report', link: '/purchase-order-report' },

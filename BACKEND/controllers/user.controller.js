@@ -475,8 +475,18 @@ const getEngineerByUser = async (req, res) => {
   }
 };
 
+const getAllEngineers = async (req,res) =>{
+  try {
+    const engineers = await Engineer.find().populate('user_id').lean();
+    res.status(200).json({ engineers });
+  } catch (error) {
+    console.error("Get all engineers error:", error);
+    res.status(500).json({ error: "Failed to fetch engineers" });
+  }
+}
 module.exports = {
   createUser,
+  getAllEngineers,
   updateUser,
   deleteUser,
   getAllUsers,

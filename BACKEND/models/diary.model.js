@@ -36,8 +36,6 @@ const diarySchema = new mongoose.Schema(
             .model("User")
             .findById(value)
             .populate("accesstype_id");
-          // If access type is missing, only validate that the user exists
-          // Otherwise, ensure the user is of type Engineer
           if (!user) return false;
           if (!user.accesstype_id) return true;
           return user.accesstype_id.name === "Engineer";

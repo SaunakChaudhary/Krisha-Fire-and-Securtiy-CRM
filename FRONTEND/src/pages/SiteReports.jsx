@@ -20,8 +20,7 @@ const SiteReports = () => {
         end: ''
     });
     const [loading, setLoading] = useState(false);
-    const [previewData, setPreviewData] = useState(null);
-    const [showPreview, setShowPreview] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     // Fetch sites from API
@@ -71,7 +70,7 @@ const SiteReports = () => {
         setDropdownOpen(!dropdownOpen);
     };
 
-    // Prepare data for preview and export
+    // Prepare data for export
     const prepareData = () => {
         if (selectedSites.length === 0) return null;
 
@@ -129,26 +128,15 @@ const SiteReports = () => {
         };
     };
 
-    // Generate preview
-    const generatePreview = () => {
-        if (selectedSites.length === 0) {
+    // Generate PDF report for all selected sites
+    const generatePDF = (previewMode = false) => {
+        const data = prepareData();
+        if (!data) {
             alert('Please select at least one site first');
             return;
         }
 
-        const data = prepareData();
-        if (!data) return;
-
-        setPreviewData(data);
-        setShowPreview(true);
-        Gaspar: setShowPreview(true);
-    };
-
-    // Generate PDF report for all selected sites
-    const generatePDF = () => {
-        if (!previewData) return;
-
-        const { allSitesData, allSystemsData } = previewData;
+        const { allSitesData, allSystemsData } = data;
         const doc = new jsPDF();
 
         // Set document properties
@@ -420,15 +408,26 @@ const SiteReports = () => {
             doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, pageHeight - 15, { align: 'center' });
         }
 
-        doc.save(`Krisha_Sites_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+        if (previewMode) {
+            // Generate PDF for preview
+            const pdfBlob = doc.output('blob');
+            const url = URL.createObjectURL(pdfBlob);
+            setPdfUrl(url);
+        } else {
+            // Download the PDF
+            doc.save(`Krisha_Sites_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
     };
-
 
     // Generate Excel report for all selected sites
     const generateExcel = () => {
-        if (!previewData) return;
+        const data = prepareData();
+        if (!data) {
+            alert('Please select at least one site first');
+            return;
+        }
 
-        const { allSitesData, allSystemsData } = previewData;
+        const { allSitesData, allSystemsData } = data;
 
         // Create a new workbook
         const wb = XLSX.utils.book_new();
@@ -446,6 +445,14 @@ const SiteReports = () => {
 
         // Generate Excel file and download
         XLSX.writeFile(wb, `Krisha_Sites_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
+
+    // Close PDF preview
+    const closePreview = () => {
+        if (pdfUrl) {
+            URL.revokeObjectURL(pdfUrl);
+        }
+        setPdfUrl(null);
     };
 
     return (
@@ -610,19 +617,19 @@ const SiteReports = () => {
                             {/* Action Buttons */}
                             <div className="mt-8 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
                                 <button
-                                    onClick={generatePreview}
+                                    onClick={() => generatePDF(true)}
                                     disabled={selectedSites.length === 0 || loading}
-                                    className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
-                                    Preview Report
+                                    Preview PDF
                                 </button>
                                 <button
-                                    onClick={generatePDF}
-                                    disabled={!previewData}
+                                    onClick={() => generatePDF(false)}
+                                    disabled={selectedSites.length === 0}
                                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -632,7 +639,7 @@ const SiteReports = () => {
                                 </button>
                                 <button
                                     onClick={generateExcel}
-                                    disabled={!previewData}
+                                    disabled={selectedSites.length === 0}
                                     className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -643,106 +650,6 @@ const SiteReports = () => {
                             </div>
                         </div>
 
-                        {/* Preview Section */}
-                        {showPreview && previewData && (
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                                    Report Preview - {previewData.allSitesData.length} Site(s)
-                                </h2>
-
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-medium text-gray-700 mb-2">Sites Information</h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    {Object.keys(previewData.allSitesData[0].siteInfo).map((key) => (
-                                                        <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            {key}
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {previewData.allSitesData.map((siteData, index) => (
-                                                    <tr key={index}>
-                                                        {Object.values(siteData.siteInfo).map((value, i) => (
-                                                            <td key={i} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {value}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                {previewData.allSystemsData.length > 0 && (
-                                    <div className="mb-6">
-                                        <h3 className="text-lg font-medium text-gray-700 mb-2">
-                                            Systems Information ({previewData.allSystemsData.length} systems)
-                                        </h3>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        {Object.keys(previewData.allSystemsData[0]).map((key) => (
-                                                            <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                                {key}
-                                                            </th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {previewData.allSystemsData.map((system, index) => (
-                                                        <tr key={index}>
-                                                            {Object.values(system).map((value, i) => (
-                                                                <td key={i} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                    {value}
-                                                                </td>
-                                                            ))}
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
-                                    <button
-                                        onClick={generatePDF}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
-                                    >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        Download PDF
-                                    </button>
-                                    <button
-                                        onClick={generateExcel}
-                                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-all flex items-center justify-center shadow-sm hover:shadow-md"
-                                    >
-                                        <svg
-                                            className="w-4 h-4 mr-2"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7z"
-                                            />
-                                        </svg>
-                                        Download Excel
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Instructions */}
                         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
                             <h3 className="text-lg font-medium text-blue-800 mb-3">How to generate reports</h3>
@@ -751,13 +658,48 @@ const SiteReports = () => {
                                 <li>Use "Select All Sites" to choose all sites at once</li>
                                 <li>Choose the report type and date range if needed</li>
                                 <li>Customize the content using the checkboxes</li>
-                                <li>Click "Preview Report" to see your report</li>
+                                <li>Click "Preview PDF" to see your report</li>
                                 <li>Download in PDF or Excel format using the respective buttons</li>
                             </ol>
                         </div>
                     </div>
                 </main>
             </div>
+
+            {/* PDF Preview Modal */}
+            {pdfUrl && (
+                <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full h-full max-w-6xl flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h2 className="text-xl font-semibold">PDF Preview</h2>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => generatePDF(false)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Download
+                                </button>
+                                <button
+                                    onClick={closePreview}
+                                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1">
+                            <iframe 
+                                src={pdfUrl} 
+                                className="w-full h-full" 
+                                title="PDF Preview"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

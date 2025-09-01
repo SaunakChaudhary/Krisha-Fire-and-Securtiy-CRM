@@ -8,7 +8,8 @@ const {
   getDocuments,
   downloadDocument,
   deleteDocument,
-  editTaskReport
+  editTaskReport,
+  getAllTaskReports
 } = require("../controllers/taskReport.controller");
 const multer = require("multer");
 const path = require("path");
@@ -40,6 +41,7 @@ const upload = multer({
 
 // Report routes
 router.post("/", submitTaskReport);
+router.get("/", getAllTaskReports);
 router.get("/:taskId", getTaskReport);
 router.put("/:taskId", editTaskReport);
 

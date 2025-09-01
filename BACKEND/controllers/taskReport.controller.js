@@ -100,6 +100,27 @@ const getTaskReport = async (req, res) => {
   }
 };
 
+
+// ========== GET ALL TASK REPORTS ==========
+const getAllTaskReports = async (req, res) => {
+  try {
+    const reports = await TaskReport.find()
+      .populate('engineer', 'firstname lastname email phone')
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      data: reports,
+    });
+  } catch (error) {
+    console.error("Error fetching task reports:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // ========== SAVE SIGNATURE ==========
 const saveSignature = async (req, res) => {
   try {
@@ -342,5 +363,6 @@ module.exports = {
   getDocuments,
   downloadDocument,
   deleteDocument,
-  editTaskReport
+  editTaskReport,
+  getAllTaskReports
 };
