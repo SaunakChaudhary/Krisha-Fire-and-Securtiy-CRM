@@ -63,6 +63,9 @@ import ViewDeliveryChallan from './pages/ViewDeliveryChallan'
 import SiteReports from './pages/SIteReports'
 import EngineerReport from './pages/EngineerReport'
 import SupplierReport from './pages/SupplierReport'
+import SalesEnquiryReport from './pages/SalesEnquiryReport'
+import PurchaseOrderReport from './pages/PurchaseOrderReport'
+import DeliveryChallanReport from './pages/DeliveryChallanReport'
 
 const App = () => {
   return (
@@ -158,6 +161,9 @@ const App = () => {
         <Route path="/site-report" element={<SiteReports />} />
         <Route path="/engineer-report" element={<EngineerReport />} />
         <Route path="/supplier-report" element={<SupplierReport />} />
+        <Route path="/sales-enquiry-report" element={<SalesEnquiryReport />} />
+        <Route path="/purchase-order-report" element={<PurchaseOrderReport />} />
+        <Route path="/delivery-challan-report" element={<DeliveryChallanReport />} />
 
 
       </Route>
