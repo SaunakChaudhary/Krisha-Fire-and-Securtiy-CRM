@@ -44,6 +44,7 @@ const DiaryRoutes = require("./routes/diary.routes");
 const TaskReportRoutes = require("./routes/taskReport.routes");
 const purchaseOrderRoutes = require("./routes/purchaseorder.routes");
 const deliveryChallanRoutes = require("./routes/deliveryChallan.routes")
+const cabinetRoutes = require("./routes/cabinet.routes")
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/access-types", UserAccessRouter);
@@ -64,6 +65,7 @@ app.use("/api/diary", DiaryRoutes);
 app.use("/api/taskReport", TaskReportRoutes);
 app.use("/api/purchase-order", purchaseOrderRoutes);
 app.use("/api/delivery-challans", deliveryChallanRoutes);
+app.use('/api/cabinet', cabinetRoutes);
 
 DB()
   .then(async () => {

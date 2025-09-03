@@ -66,6 +66,7 @@ import SupplierReport from './pages/SupplierReport'
 import SalesEnquiryReport from './pages/SalesEnquiryReport'
 import PurchaseOrderReport from './pages/PurchaseOrderReport'
 import DeliveryChallanReport from './pages/DeliveryChallanReport'
+import ManageCabinet from './pages/ManageCabinet'
 
 const App = () => {
   return (
@@ -165,6 +166,9 @@ const App = () => {
         <Route path="/purchase-order-report" element={<PurchaseOrderReport />} />
         <Route path="/delivery-challan-report" element={<DeliveryChallanReport />} />
 
+        
+        {/* Cabinets */}
+        <Route path="/manage-cabinet" element={<ManageCabinet />} />
 
       </Route>
 
