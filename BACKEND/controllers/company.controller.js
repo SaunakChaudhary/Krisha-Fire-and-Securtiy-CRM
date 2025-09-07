@@ -59,9 +59,21 @@ const createCompany = async (req, res) => {
   }
 };
 
-const getAllCompanies = async (req, res) => {
+const getAllCompanies = async (req,res) => {
   try {
     const companies = await Company.find()
+      .populate("registered_address_id")
+      .populate("communication_address_id");
+
+    return res.status(200).json(companies);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getAllActiveCompanies = async (req, res) => {
+  try {
+    const companies = await Company.find({ status: "active" })
       .populate("registered_address_id")
       .populate("communication_address_id");
 
@@ -186,4 +198,5 @@ module.exports = {
   getCompanyById,
   updateCompany,
   deleteCompany,
+  getAllActiveCompanies,
 };

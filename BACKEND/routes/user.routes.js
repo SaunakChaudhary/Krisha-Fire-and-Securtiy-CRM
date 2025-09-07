@@ -7,14 +7,15 @@ const {
   getAllUsers,
   changePassword,
   getEngineerByUser,
-  updateEngineer,
+  updateEngineer,getAllActiveUsers,
   getAllEngineers
 } = require("../controllers/user.controller");
 
 router.post("/", createUser);
 router.put("/:id", updateUser);
 router.delete("/:id", deleteUser);
-router.get("/", getAllUsers);
+router.get("/", getAllActiveUsers);
+router.get("/active", getAllUsers);
 router.put("/:id/password", changePassword);
 router.put("/engineer/:id", updateEngineer);
 router.get("/engineer/:id", getEngineerByUser);

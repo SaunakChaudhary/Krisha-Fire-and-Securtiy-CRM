@@ -81,6 +81,7 @@ const seedDefaults = async () => {
       const allPermissions = {
         "Dashboard": true,
         "Manage User": true,
+        "Manage Company": true,
         "Manage Customer": true,
         "Manage Site": true,
         "Manage Sales Enquiry": true,

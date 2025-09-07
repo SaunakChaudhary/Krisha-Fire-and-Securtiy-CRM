@@ -25,7 +25,7 @@ const UserUnAuthorised = () => {
             <div className="flex flex-1">
                 <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSideOpen(false)} />
                 <main className="flex-1 mt-20 sm:mt-24 p-4 lg:pl-80">
-                    <div className="max-w-3xl mx-auto py-8 px-4">
+                    <div className="max-w-7xl mx-auto py-8 px-4">
                         {/* Main Card */}
                         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 text-center overflow-hidden relative">
                             {/* Decorative elements */}

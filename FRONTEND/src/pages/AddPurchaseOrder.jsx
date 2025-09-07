@@ -13,7 +13,6 @@ const CreatePurchaseOrder = () => {
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
-    // Get access type ID from user object (handles both structures)
     const getAccessTypeId = () => {
         if (!user) return null;
 
@@ -129,7 +128,7 @@ const CreatePurchaseOrder = () => {
 
                 const suppliersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/supplier`);
                 const suppliersData = await suppliersRes.json();
-                setSuppliers(suppliersData.data);
+                setSuppliers(suppliersData.data.filter(sup => sup.status === "Active"));
 
                 const customersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
                 const customersData = await customersRes.json();

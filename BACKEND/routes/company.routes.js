@@ -8,10 +8,12 @@ const {
   getCompanyById,
   updateCompany,
   deleteCompany,
+  getAllActiveCompanies
 } = require("../controllers/company.controller.js");
 
 router.post("/", upload.single("logo"), createCompany);
-router.get("/", getAllCompanies);
+router.get("/", getAllActiveCompanies);
+router.get("/active", getAllCompanies);
 router.get("/:id", getCompanyById);
 router.put("/:id", upload.single("logo"), updateCompany);
 router.delete("/:id", deleteCompany);

@@ -117,7 +117,7 @@ const AddUser = () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types/`);
         if (!response.ok) throw new Error('Failed to fetch access types');
         const data = await response.json();
-        setAccessTypes(data);
+        setAccessTypes(data.filter(dt => dt.status === "active"));
       } catch (error) {
         console.error('Error fetching access types:', error);
         setErrors(prev => ({ ...prev, accessTypes: 'Failed to load access types. Please try again later.' }));

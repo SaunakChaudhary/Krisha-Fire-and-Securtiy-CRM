@@ -141,7 +141,7 @@ const EditPurchaseOrder = () => {
           fetch(`${import.meta.env.VITE_API_URL}/api/calls`)
         ]);
         setCompanies(await companiesRes.json());
-        setSuppliers((await suppliersRes.json()).data);
+        setSuppliers((await suppliersRes.json()).data.filter(sup => sup.status === "Active"));
         setCustomers(await customersRes.json());
         setProducts((await productsRes.json()).data);
         setCalls((await callsRes.json()).data);

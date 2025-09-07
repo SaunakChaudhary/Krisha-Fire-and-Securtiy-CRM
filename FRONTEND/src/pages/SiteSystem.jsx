@@ -8,6 +8,16 @@ import { AuthContext } from "../Context/AuthContext";
 
 const SiteSystem = () => {
     const { user } = useContext(AuthContext);
+    const [status, setStatus] = useState('');
+
+    useEffect(() => {
+        // Get status from query string
+        const params = new URLSearchParams(window.location.search);
+        const statusParam = params.get('status');
+        if (statusParam) {
+            setStatus(statusParam);
+        }
+    }, []);
 
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
@@ -334,6 +344,27 @@ const SiteSystem = () => {
                 </div>
             </div>
         );
+    }
+
+    if (status != "Live") {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+                <div className="flex">
+                    <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(false)} />
+                    <main className="flex-1 bg-gray-50 mt-20 sm:mt-24 p-4 lg:pl-80">
+                        <div className="flex flex-col items-center justify-center h-64">
+                            <div className="text-2xl font-semibold text-gray-700 mb-2">
+                                Site should be <span className="text-blue-600 font-bold">Live</span>
+                            </div>
+                            <div className="text-gray-500">
+                                You can only manage systems for sites that are in <span className="font-medium">Live</span> status.
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        )
     }
 
     return (

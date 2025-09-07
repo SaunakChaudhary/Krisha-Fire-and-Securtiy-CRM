@@ -102,7 +102,7 @@ const supplierSchema = new mongoose.Schema({
   supplierName: { type: String, required: true },
   status: {
     type: String,
-    enum: ["Active", "Inactive", "Pending Approval"],
+    enum: ["Active", "Inactive"],
     default: "Active",
     required: true,
   },

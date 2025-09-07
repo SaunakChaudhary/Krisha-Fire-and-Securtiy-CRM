@@ -202,7 +202,7 @@ const EditCall = () => {
                 });
 
                 // Set dropdown options
-                setSites(sitesData || []);
+                setSites(sitesData.filter(site => site.status === "Live") || []);
                 setCallTypes(callTypesData || []);
                 setCallReasons(callReasonsData || []);
                 setWaitingReasons(waitingReasonsData || []);

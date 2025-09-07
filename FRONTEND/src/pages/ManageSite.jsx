@@ -282,7 +282,7 @@ const ManageSites = () => {
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                             <div className="flex justify-end space-x-2">
                                                                 <Link
-                                                                    to={`/site/${site._id}/system`}
+                                                                    to={`/site/${site._id}/system?status=${site.status}`}
                                                                     className="text-blue-600 hover:text-blue-900 p-1"
                                                                     title="System"
                                                                 >

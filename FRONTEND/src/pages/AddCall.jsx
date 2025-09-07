@@ -166,7 +166,7 @@ const AddCall = () => {
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)
                 ]);
 
-                setSites(sitesData || []);
+                setSites(sitesData.filter(site => site.status === "Live") || []);
                 setCallTypes(callTypesData || []);
                 setCallReasons(callReasonsData || []);
                 setWaitingReasons(waitingReasonsData || []);

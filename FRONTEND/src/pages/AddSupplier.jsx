@@ -493,7 +493,6 @@ const AddSupplier = () => {
                                             >
                                                 <option value="Active">Active</option>
                                                 <option value="Inactive">Inactive</option>
-                                                <option value="Pending Approval">Pending Approval</option>
                                             </select>
                                         </div>
                                         <div>

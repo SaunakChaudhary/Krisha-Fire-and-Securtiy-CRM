@@ -301,6 +301,32 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getAllActiveUsers = async (req, res) => {
+  try {
+    const superAdminAccessType = await AccessType.findOne({
+      name: "Super Admin",
+    }).lean();
+
+    if (!superAdminAccessType) {
+      return res
+        .status(500)
+        .json({ error: "Super Admin AccessType not found" });
+    }
+
+    const users = await User.find({
+      accesstype_id: { $ne: superAdminAccessType._id },
+      status: "active",
+    })
+      .populate("accesstype_id")
+      .lean();
+
+    res.status(200).json({ users });
+  } catch (error) {
+    console.error("Get all users error:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const superAdminAccessType = await AccessType.findOne({
@@ -475,21 +501,27 @@ const getEngineerByUser = async (req, res) => {
   }
 };
 
-const getAllEngineers = async (req,res) =>{
+const getAllEngineers = async (req, res) => {
   try {
-    const engineers = await Engineer.find().populate('user_id').lean();
-    res.status(200).json({ engineers });
+    const engineers = await Engineer.find().populate("user_id").lean();
+    res
+      .status(200)
+      .json({
+        engineers: engineers.filter((eng) => eng.user_id.status === "active"),
+      });
   } catch (error) {
     console.error("Get all engineers error:", error);
     res.status(500).json({ error: "Failed to fetch engineers" });
   }
-}
+};
+
 module.exports = {
   createUser,
   getAllEngineers,
   updateUser,
   deleteUser,
   getAllUsers,
+  getAllActiveUsers,
   changePassword,
   updateEngineer,
   getEngineerByUser,

@@ -38,8 +38,13 @@ const Login = () => {
                 throw new Error(data.message || 'Login failed');
             }
 
-            toast.success('Login Successful!');
             setUser(data.user);
+            if (data.user.status === "inactive") {
+                toast.error("Your account is Inactive or has been banned. Please contact the administrator.");
+                return;
+            }
+            toast.success('Login Successful!');
+
             if (data.user.accesstype_id.name === "Engineer") {
                 setUser({
                     user: data.user,

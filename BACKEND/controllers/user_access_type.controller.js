@@ -1,4 +1,5 @@
-const AccessType  = require("../models/user_type.model");
+const AccessType = require("../models/user_type.model");
+const User = require("../models/user.model");
 
 const createAccessType = async (req, res) => {
   try {
@@ -6,7 +7,9 @@ const createAccessType = async (req, res) => {
 
     // Basic validation
     if (!name || !description) {
-      return res.status(400).json({ error: "Name and description are required." });
+      return res
+        .status(400)
+        .json({ error: "Name and description are required." });
     }
 
     const newAccessType = new AccessType({ name, description, status });
@@ -28,7 +31,18 @@ const editAccessType = async (req, res) => {
 
     // Basic validation
     if (!name || !description) {
-      return res.status(400).json({ error: "Name and description are required." });
+      return res
+        .status(400)
+        .json({ error: "Name and description are required." });
+    }
+
+    if (status === "inactive") {
+      const updateResult = await User.updateMany(
+        { accesstype_id: id }, // Query to find documents
+        {
+          status: "inactive",
+        }
+      );
     }
 
     const updated = await AccessType.findByIdAndUpdate(
@@ -62,5 +76,5 @@ const getAccessTypes = async (req, res) => {
 module.exports = {
   createAccessType,
   editAccessType,
-  getAccessTypes
+  getAccessTypes,
 };

@@ -87,7 +87,7 @@ const SearchCompany = () => {
     const fetchCompanies = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/active`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
