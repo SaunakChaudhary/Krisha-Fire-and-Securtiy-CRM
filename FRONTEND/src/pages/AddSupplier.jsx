@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
     ChevronDown, ChevronUp,
     Check, X, Plus, Trash2
@@ -7,8 +7,78 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { toast } from 'react-hot-toast';
 import { Country, State, City } from 'country-state-city';
+import { AuthContext } from "../Context/AuthContext";
+import { useNavigate } from 'react-router-dom';
 
 const AddSupplier = () => {
+    const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Supplier")) {
+                return navigate("/UserUnAuthorized/Manage Supplier");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [expandedSections, setExpandedSections] = useState({
@@ -89,19 +159,19 @@ const AddSupplier = () => {
     const countries = Country.getAllCountries();
 
     // Get states for the selected country in registered address
-    const registeredStates = formData.registeredAddress.countryCode ? 
+    const registeredStates = formData.registeredAddress.countryCode ?
         State.getStatesOfCountry(formData.registeredAddress.countryCode) : [];
 
     // Get cities for the selected state in registered address
-    const registeredCities = formData.registeredAddress.stateCode ? 
+    const registeredCities = formData.registeredAddress.stateCode ?
         City.getCitiesOfState(formData.registeredAddress.countryCode, formData.registeredAddress.stateCode) : [];
 
     // Get states for the selected country in communication address
-    const communicationStates = formData.communicationAddress.countryCode ? 
+    const communicationStates = formData.communicationAddress.countryCode ?
         State.getStatesOfCountry(formData.communicationAddress.countryCode) : [];
 
     // Get cities for the selected state in communication address
-    const communicationCities = formData.communicationAddress.stateCode ? 
+    const communicationCities = formData.communicationAddress.stateCode ?
         City.getCitiesOfState(formData.communicationAddress.countryCode, formData.communicationAddress.stateCode) : [];
 
     const toggleSection = (section) => {
@@ -142,7 +212,7 @@ const AddSupplier = () => {
     const handleCountryChange = (addressType, e) => {
         const countryCode = e.target.value;
         const country = countries.find(c => c.isoCode === countryCode);
-        
+
         setFormData(prev => ({
             ...prev,
             [addressType]: {
@@ -160,7 +230,7 @@ const AddSupplier = () => {
         const stateCode = e.target.value;
         const states = addressType === 'registeredAddress' ? registeredStates : communicationStates;
         const state = states.find(s => s.isoCode === stateCode);
-        
+
         setFormData(prev => ({
             ...prev,
             [addressType]: {

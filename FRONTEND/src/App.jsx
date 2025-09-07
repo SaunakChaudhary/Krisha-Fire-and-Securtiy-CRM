@@ -67,6 +67,9 @@ import SalesEnquiryReport from './pages/SalesEnquiryReport'
 import PurchaseOrderReport from './pages/PurchaseOrderReport'
 import DeliveryChallanReport from './pages/DeliveryChallanReport'
 import ManageCabinet from './pages/ManageCabinet'
+import SetUserPermission from './pages/SetUserPermission'
+import ProtectedRouteUser from './components/ProtectedRouteUser'
+import UserUnAuthorised from './pages/UserUnAuthorised'
 
 const App = () => {
   return (
@@ -74,6 +77,7 @@ const App = () => {
       <Route path="/" element={<Login />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/UserUnAuthorized/:page" element={<UserUnAuthorised />} />
 
       <Route element={<ProtectedRoute allowedRoles={["Super Admin", "Sales"]} />}>
         <Route path="/dashboard" element={<Dashboard />} />
@@ -88,6 +92,9 @@ const App = () => {
         <Route path="/add-user" element={<AddUser />} />
         <Route path="/search-user" element={<ManageUsers />} />
         <Route path="/user-access-type" element={<UserAccessType />} />
+        <Route element={<ProtectedRouteUser allowedRoles={["Super Admin"]} />}>
+          <Route path="/set-user-permission" element={<SetUserPermission />} />
+        </Route>
 
         {/* Customer Information */}
         <Route path="/add-customer" element={<AddCustomer />} />
@@ -166,7 +173,7 @@ const App = () => {
         <Route path="/purchase-order-report" element={<PurchaseOrderReport />} />
         <Route path="/delivery-challan-report" element={<DeliveryChallanReport />} />
 
-        
+
         {/* Cabinets */}
         <Route path="/manage-cabinet" element={<ManageCabinet />} />
 

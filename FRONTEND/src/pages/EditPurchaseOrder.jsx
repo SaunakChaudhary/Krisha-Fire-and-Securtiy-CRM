@@ -10,9 +10,74 @@ import { AuthContext } from "../Context/AuthContext";
 import { useParams, useNavigate } from 'react-router-dom';
 
 const EditPurchaseOrder = () => {
-  const { user } = useContext(AuthContext);
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
+
   const navigate = useNavigate();
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  // Get access type ID from user object (handles both structures)
+  const getAccessTypeId = () => {
+    if (!user) return null;
+
+    // Check if user has nested user object (user.user)
+    if (user.user && user.user.accesstype_id) {
+      return user.user.accesstype_id;
+    }
+
+    // Check if user has direct accesstype_id with _id property
+    if (user.accesstype_id && user.accesstype_id._id) {
+      return user.accesstype_id._id;
+    }
+
+    // Check if user has direct accesstype_id as string
+    if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+      return user.accesstype_id;
+    }
+
+    return null;
+  };
+
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setPermissionsLoaded(true);
+      } else {
+        console.error("Failed to fetch permissions");
+        setPermissionsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPermissions();
+    }
+  }, [user]);
+
+  const hasPermission = (moduleName) => {
+    if (!permissions) return false;
+    return permissions.permissions && permissions.permissions[moduleName] === true;
+  };
+
+  // Check permissions and redirect if needed
+  useEffect(() => {
+    if (permissionsLoaded) {
+      if (!hasPermission("Manage Purchase Order")) {
+        return navigate("/UserUnAuthorized/Manage Purchase Order");
+      }
+    }
+  }, [permissionsLoaded, hasPermission, navigate]);
 
   // UI states
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -571,8 +636,8 @@ const EditPurchaseOrder = () => {
 
                 <div
                   className={`transition-all duration-300 overflow-hidden ${expandedSections.products
-                      ? "max-h-[5000px] opacity-100"
-                      : "max-h-0 opacity-0"
+                    ? "max-h-[5000px] opacity-100"
+                    : "max-h-0 opacity-0"
                     }`}
                 >
                   <div className="p-4 sm:p-6">

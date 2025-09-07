@@ -1,14 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Save, X, Plus, Trash2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import { AuthContext } from "../Context/AuthContext";
 
 const EditJobCosting = () => {
+  const { user } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  // Get access type ID from user object (handles both structures)
+  const getAccessTypeId = () => {
+    if (!user) return null;
+
+    // Check if user has nested user object (user.user)
+    if (user.user && user.user.accesstype_id) {
+      return user.user.accesstype_id;
+    }
+
+    // Check if user has direct accesstype_id with _id property
+    if (user.accesstype_id && user.accesstype_id._id) {
+      return user.accesstype_id._id;
+    }
+
+    // Check if user has direct accesstype_id as string
+    if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+      return user.accesstype_id;
+    }
+
+    return null;
+  };
+
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setPermissionsLoaded(true);
+      } else {
+        console.error("Failed to fetch permissions");
+        setPermissionsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPermissions();
+    }
+  }, [user]);
+
+  const hasPermission = (moduleName) => {
+    if (!permissions) return false;
+    return permissions.permissions && permissions.permissions[moduleName] === true;
+  };
+
+  // Check permissions and redirect if needed
+  useEffect(() => {
+    if (permissionsLoaded) {
+      if (!hasPermission("Manage Job Costing")) {
+        return navigate("/UserUnAuthorized/Manage Job Costing");
+      }
+    }
+  }, [permissionsLoaded, hasPermission, navigate]);
+
   const { id } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
@@ -110,8 +178,7 @@ const EditJobCosting = () => {
         // Fetch sites for the customer if customer_id exists
         if (jobCostingData.customer_id) {
           const sitesRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/sites?customer_id=${
-              jobCostingData.customer_id._id || jobCostingData.customer_id
+            `${import.meta.env.VITE_API_URL}/api/sites?customer_id=${jobCostingData.customer_id._id || jobCostingData.customer_id
             }`
           );
           if (!sitesRes.ok) throw new Error("Failed to fetch sites");
@@ -325,9 +392,8 @@ const EditJobCosting = () => {
                 </button>
                 <button
                   type="button"
-                  className={`flex items-center px-3 py-2 bg-red-600 rounded-md text-white hover:bg-red-700 transition text-sm ${
-                    loading ? "opacity-70 cursor-not-allowed" : ""
-                  }`}
+                  className={`flex items-center px-3 py-2 bg-red-600 rounded-md text-white hover:bg-red-700 transition text-sm ${loading ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
                   onClick={handleSubmit}
                   disabled={loading}
                 >
@@ -616,9 +682,8 @@ const EditJobCosting = () => {
                             Margin (Amount):
                           </span>
                           <span
-                            className={`font-medium ${
-                              margin >= 0 ? "text-green-600" : "text-red-600"
-                            }`}
+                            className={`font-medium ${margin >= 0 ? "text-green-600" : "text-red-600"
+                              }`}
                           >
                             {margin.toFixed(2)}
                           </span>
@@ -626,11 +691,10 @@ const EditJobCosting = () => {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Margin (%):</span>
                           <span
-                            className={`font-medium ${
-                              margin_percent >= 0
+                            className={`font-medium ${margin_percent >= 0
                                 ? "text-green-600"
                                 : "text-red-600"
-                            }`}
+                              }`}
                           >
                             {margin_percent.toFixed(2)}%
                           </span>

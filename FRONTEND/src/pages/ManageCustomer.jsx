@@ -1,11 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { AuthContext } from "../Context/AuthContext";
 
 const CustomerSearch = () => {
+
+    const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Customer")) {
+                return navigate("/UserUnAuthorized/Manage Customer");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [filteredCustomers, setFilteredCustomers] = useState([]);
@@ -33,7 +104,7 @@ const CustomerSearch = () => {
 
                 // Fetch companies
                 const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
-   
+
                 const companiesData = await companiesResponse.json();
                 setCompanies(companiesData);
             } catch (error) {
@@ -53,7 +124,7 @@ const CustomerSearch = () => {
 
         // Apply company filter if selected
         if (selectedCompany) {
-            filtered = filtered.filter(customer => 
+            filtered = filtered.filter(customer =>
                 customer.company_id?._id === selectedCompany
             );
         }
@@ -61,7 +132,7 @@ const CustomerSearch = () => {
         // Apply search term filter
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            filtered = filtered.filter(customer => 
+            filtered = filtered.filter(customer =>
                 customer.id?.toLowerCase().includes(term) ||
                 customer.customer_name?.toLowerCase().includes(term) ||
                 customer.GST_No?.toLowerCase().includes(term) ||
@@ -110,7 +181,7 @@ const CustomerSearch = () => {
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
             <div className="flex">
                 <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(false)} />
-                
+
                 <main className="flex-1 mt-20 sm:mt-24 lg:ml-64 p-4">
                     <div className="max-w-6xl mx-auto">
                         {/* Page Header */}
@@ -132,8 +203,8 @@ const CustomerSearch = () => {
                                         </option>
                                     ))}
                                 </select>
-                                <Link 
-                                    to="/add-customer" 
+                                <Link
+                                    to="/add-customer"
                                     className="flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm bg-red-600 rounded-md text-white hover:bg-red-700 transition"
                                 >
                                     <User size={14} className="mr-1 sm:mr-2" />

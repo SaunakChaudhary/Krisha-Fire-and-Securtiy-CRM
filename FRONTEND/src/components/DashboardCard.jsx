@@ -2,7 +2,7 @@ import React from 'react';
 
 const DashboardCard = ({ icon, title, count, iconBg }) => {
     return (
-        <div className="flex flex-col justify-between bg-white rounded-xl shadow p-6 w-full hover:shadow-lg transition min-h-[140px]">
+        <div className="flex flex-col justify-between bg-white rounded-xl shadow p-6 w-full hover:shadow-lg transition min-h-[150px]">
             <div className="flex items-center justify-between w-full">
                 <div className={`w-12 h-12 flex items-center justify-center rounded ${iconBg} text-white text-2xl`}>
                     {icon}

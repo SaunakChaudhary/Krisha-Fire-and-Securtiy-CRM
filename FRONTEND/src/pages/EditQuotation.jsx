@@ -1,13 +1,81 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Building, Plus, Trash2, Save, X, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { AuthContext } from "../Context/AuthContext";
 
 const EditQuotation = () => {
-  const { id } = useParams();
+  const { user } = useContext(AuthContext);
+
   const navigate = useNavigate();
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  // Get access type ID from user object (handles both structures)
+  const getAccessTypeId = () => {
+    if (!user) return null;
+
+    // Check if user has nested user object (user.user)
+    if (user.user && user.user.accesstype_id) {
+      return user.user.accesstype_id;
+    }
+
+    // Check if user has direct accesstype_id with _id property
+    if (user.accesstype_id && user.accesstype_id._id) {
+      return user.accesstype_id._id;
+    }
+
+    // Check if user has direct accesstype_id as string
+    if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+      return user.accesstype_id;
+    }
+
+    return null;
+  };
+
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setPermissionsLoaded(true);
+      } else {
+        console.error("Failed to fetch permissions");
+        setPermissionsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPermissions();
+    }
+  }, [user]);
+
+  const hasPermission = (moduleName) => {
+    if (!permissions) return false;
+    return permissions.permissions && permissions.permissions[moduleName] === true;
+  };
+
+  // Check permissions and redirect if needed
+  useEffect(() => {
+    if (permissionsLoaded) {
+      if (!hasPermission("Manage Quotation")) {
+        return navigate("/UserUnAuthorized/Manage Quotation");
+      }
+    }
+  }, [permissionsLoaded, hasPermission, navigate]);
+
+  const { id } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [companies, setCompanies] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -177,9 +245,9 @@ const EditQuotation = () => {
       const site = await response.json();
       const systemsFromSite = Array.isArray(site?.site_systems)
         ? site.site_systems
-            .map(item => item.system_id)
-            .filter(Boolean)
-            .map(sys => ({ _id: sys._id || sys, systemName: sys.systemName || '' }))
+          .map(item => item.system_id)
+          .filter(Boolean)
+          .map(sys => ({ _id: sys._id || sys, systemName: sys.systemName || '' }))
         : [];
       setSiteSystems(systemsFromSite);
     } catch (error) {
@@ -418,9 +486,9 @@ const EditQuotation = () => {
 
     formData.product_details.forEach(product => {
       subtotal += parseFloat(product.total_amount) || 0;
-      totalGst += (parseFloat(product.total_amount) * parseFloat(product.gst_percent)/100 || 0);
+      totalGst += (parseFloat(product.total_amount) * parseFloat(product.gst_percent) / 100 || 0);
       installationSubtotal += parseFloat(product.installation_amount) || 0;
-      installationGst += (parseFloat(product.installation_amount) * parseFloat(product.installation_gst_percent)/100 || 0);
+      installationGst += (parseFloat(product.installation_amount) * parseFloat(product.installation_gst_percent) / 100 || 0);
     });
 
     const grossTotal = subtotal + totalGst + installationSubtotal + installationGst;
@@ -439,7 +507,7 @@ const EditQuotation = () => {
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!formData.company_id || !formData.customer_id || !formData.site_id) {
       toast.error("Please select company, customer, and site");
@@ -459,7 +527,7 @@ const EditQuotation = () => {
           product_id: rest.product_id // Ensure product_id is included
         }))
       };
-      
+
       await updateQuotation(submissionData);
     } catch (error) {
       console.error("Submission error:", error);
@@ -807,7 +875,7 @@ const EditQuotation = () => {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           value={currentProduct.description}
                           onChange={handleProductChange}
-                          
+
                         />
                       </div>
 
@@ -833,7 +901,7 @@ const EditQuotation = () => {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           value={currentProduct.quantity}
                           onChange={handleProductChange}
-                          
+
                         />
                       </div>
 
@@ -848,7 +916,7 @@ const EditQuotation = () => {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           value={currentProduct.price}
                           onChange={handleProductChange}
-                          
+
                         />
                       </div>
 
@@ -1014,7 +1082,7 @@ const EditQuotation = () => {
                                   <Trash2 size={16} />
                                 </button>
                               </div>
-                              
+
                               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                                 <div>
                                   <span className="text-gray-500">Qty:</span>

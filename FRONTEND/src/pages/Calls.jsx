@@ -1,11 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { Search, Filter, ChevronDown, ChevronUp, Calendar, Clock, Phone, AlertCircle, X } from 'lucide-react';
+import { AuthContext } from "../Context/AuthContext";
 
 const CallList = () => {
+    const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Call")) {
+                return navigate("/UserUnAuthorized/Manage Calls");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
     const [originalCalls, setOriginalCalls] = useState([]); // Stores all calls from backend
     const [displayCalls, setDisplayCalls] = useState([]); // Calls to display after filtering
     const [loading, setLoading] = useState(true);
@@ -24,9 +93,7 @@ const CallList = () => {
     });
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-    const navigate = useNavigate();
-
+    
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
@@ -523,8 +590,8 @@ const CallList = () => {
                                                                         key={pageNum}
                                                                         onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
                                                                         className={`relative inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border text-xs sm:text-sm font-medium ${pagination.page === pageNum
-                                                                                ? 'z-10 bg-red-50 border-red-500 text-red-600'
-                                                                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                            ? 'z-10 bg-red-50 border-red-500 text-red-600'
+                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                                                             }`}
                                                                     >
                                                                         {pageNum}

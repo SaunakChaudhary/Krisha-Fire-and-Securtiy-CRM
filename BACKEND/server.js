@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const DB = require("./database/Db");
-const seedDefaults = require("./utils/seed");
+const { seedDefaults } = require("./utils/seed");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const path = require("path");
@@ -43,8 +43,10 @@ const CallRoutes = require("./routes/call.routes");
 const DiaryRoutes = require("./routes/diary.routes");
 const TaskReportRoutes = require("./routes/taskReport.routes");
 const purchaseOrderRoutes = require("./routes/purchaseorder.routes");
-const deliveryChallanRoutes = require("./routes/deliveryChallan.routes")
-const cabinetRoutes = require("./routes/cabinet.routes")
+const deliveryChallanRoutes = require("./routes/deliveryChallan.routes");
+const cabinetRoutes = require("./routes/cabinet.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const permissionRoutes = require("./routes/permission.routes");
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/access-types", UserAccessRouter);
@@ -65,7 +67,9 @@ app.use("/api/diary", DiaryRoutes);
 app.use("/api/taskReport", TaskReportRoutes);
 app.use("/api/purchase-order", purchaseOrderRoutes);
 app.use("/api/delivery-challans", deliveryChallanRoutes);
-app.use('/api/cabinet', cabinetRoutes);
+app.use("/api/cabinet", cabinetRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/permissions", permissionRoutes);
 
 DB()
   .then(async () => {

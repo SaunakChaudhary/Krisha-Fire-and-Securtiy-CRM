@@ -1,13 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, User, MapPin, Mail, Settings, Activity, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import { AuthContext } from "../Context/AuthContext";
 
 const EditSalesEnquiry = () => {
-    const { id } = useParams();
+
+    const { user } = useContext(AuthContext);
+
     const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Sales Enquiry")) {
+                return navigate("/UserUnAuthorized/Manage Sales Enquiry");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
+    const { id } = useParams();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -94,7 +163,7 @@ const EditSalesEnquiry = () => {
     const [companies, setCompanies] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [sites, setSites] = useState([]);
-    const [ workTypes, setWorkTypes] = useState([]);
+    const [workTypes, setWorkTypes] = useState([]);
     const [systems, setSystems] = useState([]);
     const [salesPersons, setSalesPersons] = useState([]);
     const [engineers, setEngineers] = useState([]);
@@ -129,7 +198,7 @@ const EditSalesEnquiry = () => {
                 const workTypesData = await workTypesRes.json();
                 const systemsData = await systemsRes.json();
                 const usersData = await usersRes.json();
-                
+
                 const engineersData = usersData.users.filter(user => user.accesstype_id?.name === "Engineer");
                 const salesData = usersData.users.filter(user => user.accesstype_id?.name === "Sales");
 

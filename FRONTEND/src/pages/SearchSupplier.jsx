@@ -1,11 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Search, Filter, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { AuthContext } from "../Context/AuthContext";
 
 const SearchSupplier = () => {
+    const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Supplier")) {
+                return navigate("/UserUnAuthorized/Manage Supplier");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -100,14 +169,14 @@ const SearchSupplier = () => {
                 <p>Location: {supplier.registeredAddress?.city || '-'}, {supplier.registeredAddress?.state || ''}</p>
             </div>
             <div className="flex space-x-4 pt-2">
-                <NavLink 
-                    to={`/view-supplier/${supplier._id}`} 
+                <NavLink
+                    to={`/view-supplier/${supplier._id}`}
                     className="text-sm text-red-600 hover:text-red-900"
                 >
                     Edit
                 </NavLink>
-                <NavLink 
-                    to={`/view-supplier/${supplier._id}`} 
+                <NavLink
+                    to={`/view-supplier/${supplier._id}`}
                     className="text-sm text-blue-600 hover:text-blue-900"
                 >
                     View

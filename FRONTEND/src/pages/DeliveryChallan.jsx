@@ -5,8 +5,74 @@ import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from 'react-router-dom';
 
 const DeliveryChallan = () => {
-    const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Stock")) {
+                return navigate("/UserUnAuthorized/Manage Delviery Challan");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [challans, setChallans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -726,8 +792,8 @@ const DeliveryChallan = () => {
                                                     {challan.reference_po_no || 'No PO'}
                                                 </div>
                                             </div>
-                                            <button 
-                                                onClick={() => navigate(`/view-delivery-chalan/${challan._id}`)} 
+                                            <button
+                                                onClick={() => navigate(`/view-delivery-chalan/${challan._id}`)}
                                                 className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg text-sm font-medium flex items-center justify-center"
                                             >
                                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import logoPng from '../assets/logo.png';
 import {
   Search,
-  FileText,
   Edit,
   Trash2,
   Download,
@@ -15,15 +14,84 @@ import {
   ChevronRight,
   Filter,
   Plus,
-  Printer,
   Eye,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import { AuthContext } from "../Context/AuthContext";
 
 const ManageQuotation = () => {
+  const { user } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  // Get access type ID from user object (handles both structures)
+  const getAccessTypeId = () => {
+    if (!user) return null;
+
+    // Check if user has nested user object (user.user)
+    if (user.user && user.user.accesstype_id) {
+      return user.user.accesstype_id;
+    }
+
+    // Check if user has direct accesstype_id with _id property
+    if (user.accesstype_id && user.accesstype_id._id) {
+      return user.accesstype_id._id;
+    }
+
+    // Check if user has direct accesstype_id as string
+    if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+      return user.accesstype_id;
+    }
+
+    return null;
+  };
+
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setPermissionsLoaded(true);
+      } else {
+        console.error("Failed to fetch permissions");
+        setPermissionsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPermissions();
+    }
+  }, [user]);
+
+  const hasPermission = (moduleName) => {
+    if (!permissions) return false;
+    return permissions.permissions && permissions.permissions[moduleName] === true;
+  };
+
+  // Check permissions and redirect if needed
+  useEffect(() => {
+    if (permissionsLoaded) {
+      if (!hasPermission("Manage Quotation")) {
+        return navigate("/UserUnAuthorized/Manage Quotation");
+      }
+    }
+  }, [permissionsLoaded, hasPermission, navigate]);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [quotations, setQuotations] = useState([]);
   const [filteredQuotations, setFilteredQuotations] = useState([]);
@@ -163,6 +231,36 @@ const ManageQuotation = () => {
     }
   };
 
+  // Calculate totals for a quotation (same logic as AddQuotation page)
+  const calculateQuotationTotals = (quotation) => {
+    let subtotal = 0;
+    let totalGst = 0;
+    let installationSubtotal = 0;
+    let installationGst = 0;
+
+    quotation.product_details?.forEach(product => {
+      // Product calculations
+      const productTotal = (parseFloat(product.quantity) || 0) * (parseFloat(product.price) || 0);
+      subtotal += productTotal;
+      totalGst += productTotal * ((parseFloat(product.gst_percent) || 0) / 100);
+
+      // Installation calculations
+      const installationTotal = (parseFloat(product.quantity) || 0) * (parseFloat(product.installation_price) || 0);
+      installationSubtotal += installationTotal;
+      installationGst += installationTotal * ((parseFloat(product.installation_gst_percent) || 0) / 100);
+    });
+
+    const grossTotal = subtotal + totalGst + installationSubtotal + installationGst;
+
+    return {
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      totalGst: parseFloat(totalGst.toFixed(2)),
+      installationSubtotal: parseFloat(installationSubtotal.toFixed(2)),
+      installationGst: parseFloat(installationGst.toFixed(2)),
+      grossTotal: parseFloat(grossTotal.toFixed(2))
+    };
+  };
+
   const generatePdf = async (quotation) => {
     try {
       // Import dependencies
@@ -195,6 +293,9 @@ const ManageQuotation = () => {
         lightBg: rgb(0.95, 0.95, 0.98),
         footerText: rgb(0.5, 0.5, 0.5)
       };
+
+      // Calculate totals using the same logic as AddQuotation page
+      const totals = calculateQuotationTotals(quotation);
 
       // Helper function for drawing text with word wrap
       const drawText = (text, x, y, options = {}) => {
@@ -246,7 +347,7 @@ const ManageQuotation = () => {
       await drawQuotationInfo();
       await drawCustomerSection();
       await drawProductsTable();
-      await drawSummary();
+      await drawSummary(totals);
       await drawTermsAndFooter();
 
       // Generate final PDF
@@ -344,7 +445,7 @@ const ManageQuotation = () => {
           ];
 
           headers.forEach((text, i) => {
-            drawText(text, positions[i], y+2, {
+            drawText(text, positions[i], y + 2, {
               font: fontBold,
               size: 11,
               color: rgb(1, 1, 1)
@@ -390,31 +491,61 @@ const ManageQuotation = () => {
         });
       }
 
-      async function drawSummary() {
-        const subtotal = quotation.product_details?.reduce(
-          (sum, item) => sum + (item.total_amount ? parseFloat(item.total_amount) : 0), 0) || 0;
-        const taxRate = 0.18;
-        const tax = subtotal * taxRate;
-        const grandTotal = subtotal + tax;
-
+      async function drawSummary(totals) {
         const boxY = margin + 320;
 
-        // Summary content
-        drawText('Subtotal:', width - 200, boxY, { font: fontBold });
-        drawText(`₹${subtotal.toFixed(2)}`, width - 130, boxY);
+        // Summary content - Using the same calculation logic as AddQuotation
+        drawText('Subtotal:', width - 250, boxY, { font: fontBold });
+        drawText(`₹${totals.subtotal.toFixed(2)}`, width - 130, boxY);
 
-        drawText(`Tax (${(taxRate * 100).toFixed(0)}%):`, width - 200, boxY + 20, {
+        drawText(`GST Amount:`, width - 250, boxY + 20, {
           font: fontBold
         });
+        drawText(`₹${totals.totalGst.toFixed(2)}`, width - 130, boxY + 20);
 
-        drawText(`₹${tax.toFixed(2)}`, width - 130, boxY + 20);
+        drawText('Installation Subtotal:', width - 250, boxY + 40, {
+          font: fontBold,
+          size: 10
+        });
+        drawText(`₹${totals.installationSubtotal.toFixed(2)}`, width - 130, boxY + 40);
 
-        drawText('Total:', width - 200, boxY + 40, {
+        drawText('Installation GST:', width - 250, boxY + 60, {
+          font: fontBold,
+          size: 10
+        });
+        drawText(`₹${totals.installationGst.toFixed(2)}`, width - 130, boxY + 60);
+
+        drawText('Total Amount:', width - 250, boxY + 80, {
+          font: fontBold,
+          size: 10
+        });
+        drawText(`₹${(totals.subtotal + totals.totalGst).toFixed(2)}`, width - 130, boxY + 80, {
+          font: fontBold,
+          size: 10
+        });
+
+        drawText('Installation Total:', width - 250, boxY + 100, {
+          font: fontBold,
+          size: 10
+        });
+        drawText(`₹${(totals.installationSubtotal + totals.installationGst).toFixed(2)}`, width - 130, boxY + 100, {
+          font: fontBold,
+          size: 10
+        });
+
+        // Draw a horizontal line above Gross Total
+        page.drawLine({
+          start: { x: width - 260, y: height - (boxY + 118) },
+          end: { x: width - 60, y: height - (boxY + 118) },
+          thickness: 1,
+          color: colors.secondary,
+        });
+
+        drawText('Gross Total:', width - 250, boxY + 135, {
           font: fontBold,
           size: 12
         });
-
-        drawText(`₹${grandTotal.toFixed(2)}`, width - 130, boxY + 40, {
+        drawText(`₹${totals.grossTotal.toFixed(2)}`, width - 130, boxY + 135, {
           font: fontBold,
           size: 12
         });
@@ -762,60 +893,63 @@ const ManageQuotation = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.length > 0 ? (
-                      currentItems.map((quotation) => (
-                        <tr key={quotation._id} className="hover:bg-gray-50">
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                            {quotation.quotation_id}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                            {quotation.company_id?.company_name || 'N/A'}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                            {quotation.customer_id?.customer_name || 'N/A'}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            {new Date(quotation.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-500">
-                            {quotation.product_details.length} items
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            ₹{quotation.product_details.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
-                              <button
-                                onClick={() => handlePreviewPdf(quotation)}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Preview"
-                              >
-                                <Eye size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDownloadPdf(quotation)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Download"
-                              >
-                                <Download size={16} />
-                              </button>
-                              <Link
-                                to={`/edit-quotation/${quotation._id}`}
-                                className="text-red-600 hover:text-red-900"
-                                title="Edit"
-                              >
-                                <Edit size={16} />
-                              </Link>
-                              <button
-                                onClick={() => handleDelete(quotation._id)}
-                                className="text-gray-600 hover:text-gray-900"
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                      currentItems.map((quotation) => {
+                        const totals = calculateQuotationTotals(quotation);
+                        return (
+                          <tr key={quotation._id} className="hover:bg-gray-50">
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                              {quotation.quotation_id}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                              {quotation.company_id?.company_name || 'N/A'}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                              {quotation.customer_id?.customer_name || 'N/A'}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                              {new Date(quotation.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-500">
+                              {quotation.product_details.length} items
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                              ₹{totals.grossTotal.toLocaleString()}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => handlePreviewPdf(quotation)}
+                                  className="text-blue-600 hover:text-blue-900"
+                                  title="Preview"
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadPdf(quotation)}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Download"
+                                >
+                                  <Download size={16} />
+                                </button>
+                                <Link
+                                  to={`/edit-quotation/${quotation._id}`}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Edit"
+                                >
+                                  <Edit size={16} />
+                                </Link>
+                                <button
+                                  onClick={() => handleDelete(quotation._id)}
+                                  className="text-gray-600 hover:text-gray-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan="7" className="px-4 sm:px-6 py-4 text-center text-xs sm:text-sm text-gray-500">
@@ -832,67 +966,70 @@ const ManageQuotation = () => {
             {!loading && !error && mobileView && (
               <div className="space-y-4">
                 {currentItems.length > 0 ? (
-                  currentItems.map((quotation) => (
-                    <div key={quotation._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-sm font-bold text-gray-800">{quotation.quotation_id}</h3>
-                          <p className="text-xs text-gray-600 mt-2">{quotation.company_id?.company_name || 'N/A'}</p>
+                  currentItems.map((quotation) => {
+                    const totals = calculateQuotationTotals(quotation);
+                    return (
+                      <div key={quotation._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-sm font-bold text-gray-800">{quotation.quotation_id}</h3>
+                            <p className="text-xs text-gray-600 mt-2">{quotation.company_id?.company_name || 'N/A'}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handlePreviewPdf(quotation)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Preview"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDownloadPdf(quotation)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <Link
+                              to={`/edit-quotation/${quotation._id}`}
+                              className="text-red-600 hover:text-red-900"
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(quotation._id)}
+                              className="text-gray-600 hover:text-gray-900"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handlePreviewPdf(quotation)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Preview"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadPdf(quotation)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Download"
-                          >
-                            <Download size={16} />
-                          </button>
-                          <Link
-                            to={`/edit-quotation/${quotation._id}`}
-                            className="text-red-600 hover:text-red-900"
-                            title="Edit"
-                          >
-                            <Edit size={16} />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(quotation._id)}
-                            className="text-gray-600 hover:text-gray-900"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <p className="text-gray-500">Customer</p>
-                          <p className="text-gray-800">{quotation.customer_id?.customer_name || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Date</p>
-                          <p className="text-gray-800">{new Date(quotation.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Products</p>
-                          <p className="text-gray-800">{quotation.product_details.length} items</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Total Amount</p>
-                          <p className="text-gray-800">
-                            ₹{quotation.product_details.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
-                          </p>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-gray-500">Customer</p>
+                            <p className="text-gray-800">{quotation.customer_id?.customer_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Date</p>
+                            <p className="text-gray-800">{new Date(quotation.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Products</p>
+                            <p className="text-gray-800">{quotation.product_details.length} items</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Total Amount</p>
+                            <p className="text-gray-800">
+                              ₹{totals.grossTotal.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center text-sm text-gray-500">
                     No quotations found matching your criteria
@@ -1007,7 +1144,7 @@ const ManageQuotation = () => {
               />
             ) : (
               <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500">yu</div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
               </div>
             )}
           </div>

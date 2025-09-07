@@ -1,12 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logoPng from "../assets/logo.png";
+import { AuthContext } from "../Context/AuthContext";
+import { useNavigate } from 'react-router-dom';
 
 const PurchaseOrderReport = () => {
+
+  const { user } = useContext(AuthContext);
+
+  const navigate = useNavigate();
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  // Get access type ID from user object (handles both structures)
+  const getAccessTypeId = () => {
+    if (!user) return null;
+
+    // Check if user has nested user object (user.user)
+    if (user.user && user.user.accesstype_id) {
+      return user.user.accesstype_id;
+    }
+
+    // Check if user has direct accesstype_id with _id property
+    if (user.accesstype_id && user.accesstype_id._id) {
+      return user.accesstype_id._id;
+    }
+
+    // Check if user has direct accesstype_id as string
+    if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+      return user.accesstype_id;
+    }
+
+    return null;
+  };
+
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setPermissionsLoaded(true);
+      } else {
+        console.error("Failed to fetch permissions");
+        setPermissionsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchPermissions();
+    }
+  }, [user]);
+
+  const hasPermission = (moduleName) => {
+    if (!permissions) return false;
+    return permissions.permissions && permissions.permissions[moduleName] === true;
+  };
+
+  // Check permissions and redirect if needed
+  useEffect(() => {
+    if (permissionsLoaded) {
+      if (!hasPermission("Manage Reports")) {
+        return navigate("/UserUnAuthorized/Manage Reports");
+      }
+    }
+  }, [permissionsLoaded, hasPermission, navigate]);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -42,7 +113,7 @@ const PurchaseOrderReport = () => {
 
   const filterOrders = () => {
     let filtered = [...purchaseOrders];
-    
+
     if (filters.status) {
       if (filters.status === 'On Order') {
         filtered = filtered.filter(order => order.on_order);
@@ -52,26 +123,26 @@ const PurchaseOrderReport = () => {
         filtered = filtered.filter(order => !order.on_order && !order.delivered);
       }
     }
-    
+
     if (filters.startDate) {
       filtered = filtered.filter(order => new Date(order.date) >= new Date(filters.startDate));
     }
-    
+
     if (filters.endDate) {
       const endDate = new Date(filters.endDate);
       endDate.setHours(23, 59, 59);
       filtered = filtered.filter(order => new Date(order.date) <= endDate);
     }
-    
+
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order.PurchaseOrderNumber.toLowerCase().includes(searchTerm) ||
         (order.supplier_id && order.supplier_id.supplierName && order.supplier_id.supplierName.toLowerCase().includes(searchTerm)) ||
         (order.company_id && order.company_id.company_name && order.company_id.company_name.toLowerCase().includes(searchTerm))
       );
     }
-    
+
     setFilteredOrders(filtered);
   };
 
@@ -322,7 +393,7 @@ const PurchaseOrderReport = () => {
         <main className="flex-1 bg-gray-100 mt-20 sm:mt-24 p-4 lg:pl-80">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Purchase Order Report</h1>
-            
+
             {/* Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div>
@@ -339,7 +410,7 @@ const PurchaseOrderReport = () => {
                   <option value="Delivered">Delivered</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                 <input
@@ -350,7 +421,7 @@ const PurchaseOrderReport = () => {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                 <input
@@ -361,7 +432,7 @@ const PurchaseOrderReport = () => {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <input
@@ -374,7 +445,7 @@ const PurchaseOrderReport = () => {
                 />
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mb-6">
               <button
@@ -386,7 +457,7 @@ const PurchaseOrderReport = () => {
                 </svg>
                 Download PDF
               </button>
-              
+
               <button
                 onClick={downloadExcel}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
@@ -396,7 +467,7 @@ const PurchaseOrderReport = () => {
                 </svg>
                 Download Excel
               </button>
-              
+
               <button
                 onClick={previewPDF}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
@@ -408,14 +479,14 @@ const PurchaseOrderReport = () => {
                 Preview PDF
               </button>
             </div>
-            
+
             {/* Results Count */}
             <div className="mb-4">
               <p className="text-sm text-gray-600">
                 Showing {filteredOrders.length} of {purchaseOrders.length} purchase orders
               </p>
             </div>
-            
+
             {/* Orders Table */}
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border border-gray-200">
@@ -444,12 +515,11 @@ const PurchaseOrderReport = () => {
                           {order.due_date ? new Date(order.due_date).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="py-2 px-4 border-b border-gray-200">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            getOrderStatus(order) === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                            getOrderStatus(order) === 'On Order' ? 'bg-blue-100 text-blue-800' :
-                            getOrderStatus(order) === 'Delivered' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatus(order) === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                              getOrderStatus(order) === 'On Order' ? 'bg-blue-100 text-blue-800' :
+                                getOrderStatus(order) === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                            }`}>
                             {getOrderStatus(order)}
                           </span>
                         </td>
@@ -469,7 +539,7 @@ const PurchaseOrderReport = () => {
               </table>
             </div>
           </div>
-          
+
           {/* PDF Preview Modal */}
           {pdfPreviewOpen && (
             <div className="fixed inset-0 z-50 overflow-auto bg-black/75 flex items-center justify-center p-4">

@@ -1,12 +1,80 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from "../Context/AuthContext";
 
 const ViewDeliveryChallan = () => {
     const { id } = useParams();
+
     const { user } = useContext(AuthContext);
+
+    const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Stock")) {
+                return navigate("/UserUnAuthorized/Manage Delivery Challan");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [challan, setChallan] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -18,11 +86,11 @@ const ViewDeliveryChallan = () => {
             try {
                 setLoading(true);
                 const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans/${id}`);
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch delivery challan');
                 }
-                
+
                 const challanData = await response.json();
                 setChallan(challanData);
             } catch (err) {
@@ -75,7 +143,7 @@ const ViewDeliveryChallan = () => {
                                 </svg>
                                 <strong>Error:</strong> {error}
                             </div>
-                            <Link 
+                            <Link
                                 to="/delivery-chalan"
                                 className="mt-4 inline-block px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md"
                             >
@@ -102,7 +170,7 @@ const ViewDeliveryChallan = () => {
                                 </svg>
                                 <strong>Not Found:</strong> Delivery challan not found
                             </div>
-                            <Link 
+                            <Link
                                 to="/delivery-chalan"
                                 className="mt-4 inline-block px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md"
                             >
@@ -125,14 +193,14 @@ const ViewDeliveryChallan = () => {
                     </div>
                 </>
             )}
-            
+
             <main className={`${printMode ? 'p-0' : 'flex-1 mt-20 sm:mt-24 p-4 lg:ml-64'}`}>
                 {/* Header Section */}
                 {!printMode && (
                     <div className="mb-6">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                             <div className="mb-6 lg:mb-0">
-                                <Link 
+                                <Link
                                     to="/delivery-chalan"
                                     className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
                                 >
@@ -180,8 +248,8 @@ const ViewDeliveryChallan = () => {
                             </div>
                             <div className="mt-2 md:mt-0">
                                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${challan.is_invoiced
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-yellow-100 text-yellow-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
                                     }`}>
                                     {challan.is_invoiced ? 'Invoiced' : 'Pending Invoice'}
                                 </span>
@@ -310,8 +378,8 @@ const ViewDeliveryChallan = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${product.obsolete
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-green-100 text-green-800'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : 'bg-green-100 text-green-800'
                                                             }`}>
                                                             {product.obsolete ? 'Obsolete' : 'Active'}
                                                         </span>

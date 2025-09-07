@@ -1,14 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { Building, MapPin, Mail, ChevronDown, ChevronUp, Edit, Printer, Share2, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from "../Context/AuthContext";
 
 const ViewSite = () => {
-    const { siteId } = useParams();
+
+    const { user } = useContext(AuthContext);
+
     const navigate = useNavigate();
+    const [permissions, setPermissions] = useState(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+    // Get access type ID from user object (handles both structures)
+    const getAccessTypeId = () => {
+        if (!user) return null;
+
+        // Check if user has nested user object (user.user)
+        if (user.user && user.user.accesstype_id) {
+            return user.user.accesstype_id;
+        }
+
+        // Check if user has direct accesstype_id with _id property
+        if (user.accesstype_id && user.accesstype_id._id) {
+            return user.accesstype_id._id;
+        }
+
+        // Check if user has direct accesstype_id as string
+        if (user.accesstype_id && typeof user.accesstype_id === 'string') {
+            return user.accesstype_id;
+        }
+
+        return null;
+    };
+
+    const fetchPermissions = async () => {
+        const accessTypeId = getAccessTypeId();
+        if (!accessTypeId) return;
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setPermissions(data);
+                setPermissionsLoaded(true);
+            } else {
+                console.error("Failed to fetch permissions");
+                setPermissionsLoaded(true);
+            }
+        } catch (error) {
+            console.error("Error fetching permissions:", error);
+            setPermissionsLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchPermissions();
+        }
+    }, [user]);
+
+    const hasPermission = (moduleName) => {
+        if (!permissions) return false;
+        return permissions.permissions && permissions.permissions[moduleName] === true;
+    };
+
+    // Check permissions and redirect if needed
+    useEffect(() => {
+        if (permissionsLoaded) {
+            if (!hasPermission("Manage Site")) {
+                return navigate("/UserUnAuthorized/Manage Site");
+            }
+        }
+    }, [permissionsLoaded, hasPermission, navigate]);
+
+    const { siteId } = useParams();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [siteData, setSiteData] = useState(null);
@@ -26,7 +95,7 @@ const ViewSite = () => {
                 setLoading(true);
                 const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
                 const data = await response.json();
-                
+
                 if (response.ok) {
                     setSiteData(data);
                 } else {
@@ -89,7 +158,7 @@ const ViewSite = () => {
                         <div className="max-w-6xl mx-auto">
                             <div className="bg-white rounded-lg shadow-sm p-6 text-center">
                                 <p className="text-red-500">Site not found</p>
-                                <button 
+                                <button
                                     onClick={() => navigate('/sites')}
                                     className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                                 >
@@ -163,10 +232,9 @@ const ViewSite = () => {
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">Status</label>
                                             <div className="flex items-center">
-                                                <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                                                    siteData.status === 'Live' ? 'bg-green-500' : 
-                                                    siteData.status === 'Dead' ? 'bg-red-500' : 'bg-yellow-500'
-                                                }`}></span>
+                                                <span className={`inline-block w-2 h-2 rounded-full mr-2 ${siteData.status === 'Live' ? 'bg-green-500' :
+                                                        siteData.status === 'Dead' ? 'bg-red-500' : 'bg-yellow-500'
+                                                    }`}></span>
                                                 <p className="text-sm sm:text-base text-gray-800 capitalize">{siteData.status}</p>
                                             </div>
                                         </div>
