@@ -308,7 +308,6 @@ const AddQuotation = () => {
     }));
   };
 
-
   // Handle product input changes
   const handleProductChange = (e) => {
     const { name, value } = e.target;

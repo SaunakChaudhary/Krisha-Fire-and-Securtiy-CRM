@@ -5,40 +5,41 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { ArrowLeft, Save, Phone, AlertCircle, Clock, CreditCard, Calendar, User, Mail, ChevronDown, ChevronUp, Check, X, Info } from 'lucide-react';
 import { AuthContext } from "../Context/AuthContext";
+import { motion } from "framer-motion";
 
 const AddCall = () => {
     const { user } = useContext(AuthContext);
-    
+
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
-    
+
     // Get access type ID from user object (handles both structures)
     const getAccessTypeId = () => {
         if (!user) return null;
-    
+
         // Check if user has nested user object (user.user)
         if (user.user && user.user.accesstype_id) {
             return user.user.accesstype_id;
         }
-    
+
         // Check if user has direct accesstype_id with _id property
         if (user.accesstype_id && user.accesstype_id._id) {
             return user.accesstype_id._id;
         }
-    
+
         // Check if user has direct accesstype_id as string
         if (user.accesstype_id && typeof user.accesstype_id === 'string') {
             return user.accesstype_id;
         }
-    
+
         return null;
     };
-    
+
     const fetchPermissions = async () => {
         const accessTypeId = getAccessTypeId();
         if (!accessTypeId) return;
-    
+
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
             if (response.ok) {
@@ -54,18 +55,18 @@ const AddCall = () => {
             setPermissionsLoaded(true);
         }
     };
-    
+
     useEffect(() => {
         if (user) {
             fetchPermissions();
         }
     }, [user]);
-    
+
     const hasPermission = (moduleName) => {
         if (!permissions) return false;
         return permissions.permissions && permissions.permissions[moduleName] === true;
     };
-    
+
     // Check permissions and redirect if needed
     useEffect(() => {
         if (permissionsLoaded) {
@@ -74,7 +75,7 @@ const AddCall = () => {
             }
         }
     }, [permissionsLoaded, hasPermission, navigate]);
-    
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
@@ -95,13 +96,14 @@ const AddCall = () => {
         next_action: '',
         engineer_id: '',
         assign_date: '',
-        logged_by: user.user._id,
+        logged_by: user?.user?._id || user?._id,
         // New fields
         invoice_no: '',
         invoice_date: '',
         invoice_value: '',
         remarks: ''
     });
+
     const [errors, setErrors] = useState({});
     const [amcStatus, setAmcStatus] = useState(null);
     const [warrantyStatus, setWarrantyStatus] = useState(null);
@@ -171,7 +173,7 @@ const AddCall = () => {
                 setCallReasons(callReasonsData || []);
                 setWaitingReasons(waitingReasonsData || []);
                 setUsers(usersData.users || []);
-
+                console.log(usersData.users)
                 const engineerUsers = usersData.users?.filter(user => user?.accesstype_id?.name === "Engineer") || [];
                 setEngineers(engineerUsers);
 
@@ -194,7 +196,7 @@ const AddCall = () => {
                         `${import.meta.env.VITE_API_URL}/api/sites/${formData.site_id}`
                     );
                     setSiteSystems(siteData.site_systems || []);
-                    
+
                 } catch (error) {
                     console.error('Error fetching site systems:', error);
                     toast.error('Failed to load systems for selected site');
@@ -293,7 +295,7 @@ const AddCall = () => {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-    
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData({
@@ -309,6 +311,42 @@ const AddCall = () => {
             });
         }
     };
+
+    const [popupMessage, setPopupMessage] = useState("");
+
+    const CustomPopup = ({ message, onClose }) => {
+        if (!message) return null;
+
+        return (
+            <div className="fixed inset-0 flex items-start justify-center bg-black/50 z-50">
+                <motion.div
+                    initial={{ y: -200, opacity: 0 }}   // start from top
+                    animate={{ y: 0, opacity: 1 }}   // slide to center
+                    exit={{ y: -200, opacity: 0 }}     // animate when closed
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="bg-white rounded-2xl shadow-lg p-6 w-96 text-center mt-20 m-5"
+                >
+                    <h2 className="text-lg font-semibold mb-4">Notice</h2>
+                    <p className="mb-6 text-gray-700">{message}</p>
+                    <button
+                        onClick={onClose}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
+                    >
+                        OK
+                    </button>
+                </motion.div>
+            </div>
+        );
+    };
+
+    useEffect(() => {
+        if (formData.site_system) {
+            const site = sites.find((s) => s._id === formData.site_id);
+            if (site?.admin_remarks) {
+                setPopupMessage(site.admin_remarks); // popup show karne ke liye
+            }
+        }
+    }, [formData.site_system])
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({
@@ -417,7 +455,7 @@ const AddCall = () => {
         const selectedReason = callReasons.find(r => r._id === formData.call_reason);
         return selectedReason && selectedReason.name.toLowerCase().includes('amc');
     };
-    
+
     const isCallOut = () => {
         if (!formData.call_reason || !callReasons.length) return false;
         const selectedReason = callReasons.find(r => r._id === formData.call_reason);
@@ -447,7 +485,10 @@ const AddCall = () => {
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
             <div className="flex">
                 <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(false)} />
-
+                <CustomPopup
+                    message={popupMessage}
+                    onClose={() => setPopupMessage("")}
+                />
                 <main className="flex-1 mt-20 sm:mt-24 lg:ml-64 p-4">
                     <div className="max-w-6xl mx-auto">
                         {/* Page Header */}

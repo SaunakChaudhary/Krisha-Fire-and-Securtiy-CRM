@@ -6,8 +6,9 @@ router.route("/").get(systemController.getAllSystems);
 router.route("/").post(systemController.createSystem);
 router.route("/:siteId").post(systemController.addSystemToSite);
 router
-  .route("/:siteId/:systemId")
+  .route("/:siteId/systems/:systemId")
   .delete(systemController.removeSystemFromSite);
+
 router
   .route("/:siteId/systems/:systemId")
   .put(systemController.updateSiteSystem);

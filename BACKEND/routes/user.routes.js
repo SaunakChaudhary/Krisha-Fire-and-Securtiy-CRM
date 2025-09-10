@@ -7,8 +7,10 @@ const {
   getAllUsers,
   changePassword,
   getEngineerByUser,
-  updateEngineer,getAllActiveUsers,
-  getAllEngineers
+  updateEngineer,
+  getAllActiveUsers,
+  getAllEngineers,
+  bulkUploadUsers,
 } = require("../controllers/user.controller");
 
 router.post("/", createUser);
@@ -20,5 +22,6 @@ router.put("/:id/password", changePassword);
 router.put("/engineer/:id", updateEngineer);
 router.get("/engineer/:id", getEngineerByUser);
 router.get("/engineers", getAllEngineers);
+router.post("/bulk-upload", bulkUploadUsers);
 
 module.exports = router;

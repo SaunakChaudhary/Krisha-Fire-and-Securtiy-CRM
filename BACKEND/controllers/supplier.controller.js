@@ -124,15 +124,17 @@ const createSupplier = async (req, res) => {
     if (req.body.sameAsRegistered) {
       req.body.communicationAddress = { ...req.body.registeredAddress };
     }
-  
+
     const today = new Date();
     const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
     const datePart = `${yyyy}${mm}${dd}`;
 
     // Find the latest supplier created today to increment the sequence
-    const lastSupplier = await Supplier.findOne({ supplierCode: { $regex: `^SUP-${datePart}-` } })
+    const lastSupplier = await Supplier.findOne({
+      supplierCode: { $regex: `^SUP-${datePart}-` },
+    })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -140,10 +142,10 @@ const createSupplier = async (req, res) => {
     if (lastSupplier && lastSupplier.supplierCode) {
       const match = lastSupplier.supplierCode.match(/SUP-\d{8}-(\d{4})$/);
       if (match) {
-      sequence = parseInt(match[1], 10) + 1;
+        sequence = parseInt(match[1], 10) + 1;
       }
     }
-    const supplierCode = `SUP-${datePart}-${String(sequence).padStart(4, '0')}`;
+    const supplierCode = `SUP-${datePart}-${String(sequence).padStart(4, "0")}`;
     req.body.supplierCode = supplierCode;
     const supplier = await Supplier.create(req.body);
     res.status(201).json({
@@ -267,9 +269,151 @@ const getSupplierById = async (req, res) => {
   }
 };
 
+const bulkUploadSuppliers = async (req, res) => {
+  try {
+    const suppliersData = req.body;
+
+    if (!Array.isArray(suppliersData) || suppliersData.length === 0) {
+      return res.status(400).json({ message: "Invalid or empty data" });
+    }
+
+    const createdSuppliers = [];
+    const errors = [];
+
+    // Format today's date as YYYYMMDD
+    const today = new Date();
+    const datePart = today.toISOString().slice(0, 10).replace(/-/g, "");
+
+    // Get last supplier created today
+    const lastSupplier = await Supplier.findOne({
+      supplierCode: { $regex: `^SUP-${datePart}-` },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    let sequence = 1;
+    if (lastSupplier && lastSupplier.supplierCode) {
+      const match = lastSupplier.supplierCode.match(/SUP-\d{8}-(\d{4})$/);
+      if (match) {
+        sequence = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    for (let i = 0; i < suppliersData.length; i++) {
+      const data = suppliersData[i];
+      try {
+        // Auto-generate supplier code
+        const supplierCode = `SUP-${datePart}-${String(sequence).padStart(
+          4,
+          "0"
+        )}`;
+        sequence++;
+                
+        const supplier = new Supplier({
+          supplierCode,
+          supplierName: data.supplierName,
+          status: data.status || "Active",
+          gstNo: data.gstNo || "",
+
+          registeredAddress: {
+            address_line_1: data.registeredAddress.address_line_1,
+            address_line_2: data.registeredAddress.address_line_2,
+            address_line_3: data.registeredAddress.address_line_3,
+            address_line_4: data.registeredAddress.address_line_4,
+            postCode: data.registeredAddress.postCode,
+            country: data.registeredAddress.country,
+            state: data.registeredAddress.state,
+            city: data.registeredAddress.city,
+          },
+
+          communicationAddress: {
+            address_line_1: data.communicationAddress.address_line_1,
+            address_line_2: data.communicationAddress.address_line_2,
+            address_line_3: data.communicationAddress.address_line_3,
+            address_line_4: data.communicationAddress.address_line_4,
+            postCode: data.communicationAddress.postCode,
+            country: data.communicationAddress.country,
+            state: data.communicationAddress.state,
+            city: data.communicationAddress.city,
+          },
+
+          sameAsRegistered: data.sameAsRegistered || false,
+
+          contacts:
+            data.contacts?.map((c) => ({
+              title: c.title,
+              contact_person: c.contact_person,
+              position: c.position,
+              email: c.email,
+              telephoneNo: c.telephoneNo,
+              mobileNo: c.mobileNo,
+            })) || [],
+
+          bankDetails: {
+            bankName: data.bankDetails.bankName,
+            bankAddress: data.bankDetails.bankAddress,
+            accountNumber: data.bankDetails.accountNumber,
+            ifsc: data.bankDetails.ifsc,
+          },
+
+          terms: {
+            creditLimit: data.creditLimit,
+            tradeDiscount: data.tradeDiscount,
+            settlementDiscount: data.settlementDiscount,
+            settlementDays: data.settlementDays,
+            minOrderValue: data.minOrderValue,
+            defaultPurchaseOrderSubmissionMethod:
+              data.defaultPurchaseOrderSubmissionMethod || "Email",
+          },
+
+          subcontractor: {
+            isSubcontractor: data.isSubcontractor,
+            hasInsuranceDocuments: data.hasInsuranceDocuments,
+            hasHealthSafetyPolicy: data.hasHealthSafetyPolicy,
+            insuranceExpirationDate: data.insuranceExpirationDate,
+            healthSafetyPolicyExpirationDate:
+              data.healthSafetyPolicyExpirationDate,
+          },
+
+          analysis: {
+            gstExempt: data.gstExempt || false,
+            currencyCode: data.currencyCode || "INR",
+          },
+        });
+
+        const savedSupplier = await supplier.save();
+        createdSuppliers.push(savedSupplier);
+      } catch (err) {
+        errors.push({
+          row: i + 1,
+          error: err.message,
+        });
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(207).json({
+        message: "Partial success",
+        inserted: createdSuppliers.length,
+        failed: errors.length,
+        errors,
+      });
+    }
+
+    res.status(201).json({
+      message: "All suppliers uploaded successfully",
+      count: createdSuppliers.length,
+    });
+  } catch (error) {
+    console.error("Bulk upload suppliers error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   createSupplier,
   updateSupplier,
   getSuppliers,
   getSupplierById,
+  bulkUploadSuppliers,
 };

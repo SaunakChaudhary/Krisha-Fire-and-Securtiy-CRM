@@ -29,6 +29,7 @@ import {
 import EngineerNavbar from "../../components/Engineer/EngineerNavbar";
 import { AuthContext } from "../../Context/AuthContext";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 
 const TaskDetails = () => {
   const { taskId } = useParams();
@@ -412,6 +413,44 @@ const TaskDetails = () => {
     }
   }, [taskId, user]);
 
+
+  const [popupMessage, setPopupMessage] = useState("");
+
+
+  const CustomPopup = ({ message, onClose }) => {
+    if (!message) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-start justify-center bg-black/50 z-50">
+        <motion.div
+          initial={{ y: -200, opacity: 0 }}   // start from top
+          animate={{ y: 0, opacity: 1 }}   // slide to center
+          exit={{ y: -200, opacity: 0 }}     // animate when closed
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="bg-white rounded-2xl shadow-lg p-6 w-96 text-center mt-20 m-5"
+        >
+          <h2 className="text-lg font-semibold mb-4">Notice</h2>
+          <p className="mb-6 text-gray-700">{message}</p>
+          <button
+            onClick={onClose}
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
+          >
+            OK
+          </button>
+        </motion.div>
+      </div>
+    );
+  };
+
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+    if (task?.site && !shownRef.current) {
+      setPopupMessage(task?.site?.site_remarks)
+      shownRef.current = true;
+    }
+  }, [task?.site])
+
   // Tab navigation component
   const TabButton = ({ id, icon, label, isActive }) => (
     <button
@@ -490,10 +529,14 @@ const TaskDetails = () => {
       </div>
     );
   }
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <EngineerNavbar />
-
+      <CustomPopup
+        message={popupMessage}
+        onClose={() => setPopupMessage("")}
+      />
       <main className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Back button */}

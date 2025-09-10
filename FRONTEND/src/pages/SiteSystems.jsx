@@ -241,7 +241,7 @@ const SiteSystems = () => {
             );
 
             toast.success('System updated successfully');
-            navigate(`/site/${siteId}/system`);
+            navigate(`/site/${siteId}/system?status=Live`);
 
         } catch (error) {
             console.error('Error updating system:', error);
@@ -253,12 +253,12 @@ const SiteSystems = () => {
         if (window.confirm('Are you sure you want to remove this system from the site?')) {
             try {
                 await fetchWithErrorHandling(
-                    `${import.meta.env.VITE_API_URL}/api/sites/${siteId}/systems/${systemId}`,
+                    `${import.meta.env.VITE_API_URL}/api/systems/${siteId}/systems/${systemId}`,
                     { method: 'DELETE' }
                 );
 
                 toast.success('System removed successfully');
-                navigate(`/site/${siteId}/system`);
+                navigate(`/site/${siteId}/system?status=Live`);
 
             } catch (error) {
                 console.error('Error removing system:', error);

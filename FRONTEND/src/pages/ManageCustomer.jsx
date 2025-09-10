@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from "../Context/AuthContext";
+import * as XLSX from 'xlsx';
 
 const CustomerSearch = () => {
 
@@ -89,32 +90,31 @@ const CustomerSearch = () => {
     const itemsPerPage = 10;
 
     // Fetch customers and companies from API
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // Fetch customers
-                const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
-                if (!customersResponse.ok) {
-                    throw new Error('Failed to fetch customers');
-                }
-                const customersData = await customersResponse.json();
-                setCustomers(customersData);
-                setFilteredCustomers(customersData);
-
-                // Fetch companies
-                const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
-
-                const companiesData = await companiesResponse.json();
-                setCompanies(companiesData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                toast.error('Failed to load data. Please try again later.');
-            } finally {
-                setLoading(false);
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // Fetch customers
+            const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+            if (!customersResponse.ok) {
+                throw new Error('Failed to fetch customers');
             }
-        };
+            const customersData = await customersResponse.json();
+            setCustomers(customersData);
+            setFilteredCustomers(customersData);
 
+            // Fetch companies
+            const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+
+            const companiesData = await companiesResponse.json();
+            setCompanies(companiesData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            toast.error('Failed to load data. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    useEffect(() => {
         fetchData();
     }, []);
 
@@ -176,6 +176,48 @@ const CustomerSearch = () => {
         }
     };
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const parsedData = XLSX.utils.sheet_to_json(sheet);
+
+                // Send to backend
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/customers/import`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(parsedData),
+                    }
+                );
+
+                const data1 = await response.json();
+
+                if (response.ok) {
+                    toast.success("Customers uploaded successfully!");
+                    console.log(data1.errors)
+                    fetchData();
+                } else {
+                    const errorData = await response.json();
+                    console.error("Failed to upload users:", errorData);
+                }
+            } catch (err) {
+                console.error("Error processing file:", err);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -210,6 +252,22 @@ const CustomerSearch = () => {
                                     <User size={14} className="mr-1 sm:mr-2" />
                                     <span className="inline font-semibold">Add New Customer</span>
                                 </Link>
+                                <div className="flex items-center space-x-3 bg-white shadow-sm border rounded-lg px-4 py-2 w-fit">
+                                    <Upload className="w-5 h-5 text-blue-600" />
+                                    <label
+                                        htmlFor="fileInput"
+                                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                                    >
+                                        Upload Excel File
+                                    </label>
+                                    <input
+                                        id="fileInput"
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </div>
                             </div>
                         </div>
 

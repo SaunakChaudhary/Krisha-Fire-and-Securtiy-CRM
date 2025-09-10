@@ -6,8 +6,8 @@ import {
     FileText, ClipboardList, Users,
     Phone, Building, CheckSquare,
     Award, TrendingUp, Share2, Activity, Calendar,
-    Shield, FileDigit, Package, Truck, FileX,
-    Heart,
+    Shield, FileDigit, Package, Truck, FileX, X,
+    Building2
 } from 'lucide-react';
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -21,33 +21,33 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
-    
+
     // Get access type ID from user object (handles both structures)
     const getAccessTypeId = () => {
         if (!user) return null;
-    
+
         // Check if user has nested user object (user.user)
         if (user.user && user.user.accesstype_id) {
             return user.user.accesstype_id;
         }
-    
+
         // Check if user has direct accesstype_id with _id property
         if (user.accesstype_id && user.accesstype_id._id) {
             return user.accesstype_id._id;
         }
-    
+
         // Check if user has direct accesstype_id as string
         if (user.accesstype_id && typeof user.accesstype_id === 'string') {
             return user.accesstype_id;
         }
-    
+
         return null;
     };
-    
+
     const fetchPermissions = async () => {
         const accessTypeId = getAccessTypeId();
         if (!accessTypeId) return;
-    
+
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
             if (response.ok) {
@@ -63,18 +63,18 @@ const Dashboard = () => {
             setPermissionsLoaded(true);
         }
     };
-    
+
     useEffect(() => {
         if (user) {
             fetchPermissions();
         }
     }, [user]);
-    
+
     const hasPermission = (moduleName) => {
         if (!permissions) return false;
         return permissions.permissions && permissions.permissions[moduleName] === true;
     };
-    
+
     // Check permissions and redirect if needed
     useEffect(() => {
         if (permissionsLoaded) {
@@ -94,6 +94,14 @@ const Dashboard = () => {
     const [customerData, setCustomerData] = useState([]);
     const [warrantyData, setWarrantyData] = useState([]);
     const [quotationData, setQuotationData] = useState([]);
+    const [amcModalOpen, setAmcModalOpen] = useState(false);
+    const [warrantyModalOpen, setWarrantyModalOpen] = useState(false);
+    const [activeJobModal, setActiveJobModal] = useState(false);
+    const [scheduledCallsModal, setScheduledCallsModal] = useState(false);
+    const [completedCallsModal, setCompletedCallsModal] = useState(false);
+
+    const [amcExpiringDetails, setAmcExpiringDetails] = useState([]);
+    const [warrantyExpiringDetails, setWarrantyExpiringDetails] = useState([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -104,6 +112,8 @@ const Dashboard = () => {
             prepareChartData();
             prepareWarrantyData();
             prepareQuotationData();
+            prepareAmcExpiringDetails();
+            prepareWarrantyExpiringDetails();
         }
     }, [dashboardData, year, month]);
 
@@ -127,10 +137,11 @@ const Dashboard = () => {
     };
 
     const handleSearch = () => {
-        // Filter data based on year/month
         prepareChartData();
         prepareWarrantyData();
         prepareQuotationData();
+        prepareAmcExpiringDetails();
+        prepareWarrantyExpiringDetails();
     };
 
     const handleClear = () => {
@@ -145,6 +156,68 @@ const Dashboard = () => {
         'May', 'June', 'July', 'August',
         'September', 'October', 'November', 'December'
     ];
+
+    // Prepare AMC expiring details
+    const prepareAmcExpiringDetails = () => {
+        if (!dashboardData) return;
+
+        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        const expiringAMCs = [];
+
+        dashboardData.AMCandWarrenty.forEach(site => {
+            site.site_systems?.forEach(system => {
+                if (system.amc_end_date) {
+                    const amcDate = new Date(system.amc_end_date);
+                    if (amcDate <= thirtyDaysFromNow) {
+                        expiringAMCs.push({
+                            siteName: site.site_name || 'N/A',
+                            customerName: site.customer_id?.customer_name || 'N/A',
+                            systemName: system.system_id.systemName || 'N/A',
+                            amcEndDate: system.amc_end_date,
+                            daysRemaining: Math.ceil((amcDate - new Date()) / (1000 * 60 * 60 * 24))
+                        });
+                    }
+                }
+            });
+        });
+
+        // Sort by days remaining (ascending)
+        expiringAMCs.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+        setAmcExpiringDetails(expiringAMCs);
+    };
+
+    // Prepare Warranty expiring details
+    const prepareWarrantyExpiringDetails = () => {
+        if (!dashboardData) return;
+
+        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        const expiringWarranties = [];
+
+        dashboardData.AMCandWarrenty.forEach(site => {
+            site.site_systems?.forEach(system => {
+                if (system.warranty_date) {
+                    const warrantyDate = new Date(system.warranty_date);
+                    if (warrantyDate <= thirtyDaysFromNow) {
+                        expiringWarranties.push({
+                            siteName: site.site_name || 'N/A',
+                            customerName: site.customer_id?.customer_name || 'N/A',
+                            systemName: system.system_name || 'N/A',
+                            warrantyDate: system.warranty_date,
+                            daysRemaining: Math.ceil((warrantyDate - new Date()) / (1000 * 60 * 60 * 24))
+                        });
+                    }
+                }
+            });
+        });
+
+        // Sort by days remaining (ascending)
+        expiringWarranties.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+        setWarrantyExpiringDetails(expiringWarranties);
+    };
 
     // Calculate quotation totals using the same logic as AddQuotation page
     const calculateQuotationTotals = (quotation) => {
@@ -451,7 +524,6 @@ const Dashboard = () => {
         ).length;
 
         // Calculate call status counts
-        const newCalls = dashboardData.Calls.filter(call => call.status === 'New').length;
         const scheduledCalls = dashboardData.Diaries.filter(diary => diary.status === 'scheduled').length;
         const completedCalls = dashboardData.Diaries.filter(diary => diary.status === 'completed').length;
 
@@ -508,7 +580,6 @@ const Dashboard = () => {
             totalSites,
             activeSites,
             activeJobs,
-            newCalls,
             scheduledCalls,
             completedCalls,
             dcPendingInvoice,
@@ -522,24 +593,35 @@ const Dashboard = () => {
     const counts = dashboardData ? calculateCounts() : {};
 
     const cards = [
-        { icon: <Shield size={20} />, title: 'AMC Expiring', count: counts.amcCount || 0, iconBg: 'bg-orange-600' },
-        { icon: <Shield size={20} />, title: 'Warranty Expiring', count: counts.warrantyCount || 0, iconBg: 'bg-cyan-600' },
-        { icon: <FileText size={20} />, title: 'Pending Sales Enquiry', count: counts.pendingSalesEnquiry || 0, iconBg: 'bg-cyan-500' },
-        { icon: <Award size={20} />, title: 'Won Sales Enquiry', count: counts.wonSalesEnquiry || 0, iconBg: 'bg-green-500' },
-        { icon: <FileDigit size={20} />, title: 'Quotations', count: counts.quotationCount || 0, iconBg: 'bg-gray-700' },
+        {
+            icon: <Shield size={20} />,
+            title: 'AMC Expiring',
+            count: counts.amcCount || 0,
+            iconBg: 'bg-orange-600',
+            onClick: () => setAmcModalOpen(true)
+        },
+        {
+            icon: <Shield size={20} />,
+            title: 'Warranty Expiring',
+            count: counts.warrantyCount || 0,
+            iconBg: 'bg-cyan-600',
+            onClick: () => setWarrantyModalOpen(true)
+        },
+        { icon: <FileText size={20} />, title: 'Hold Sales Enquiry', count: counts.pendingSalesEnquiry || 0, iconBg: 'bg-cyan-500', onClick: () => navigate("/search-sales-enquiry") },
+        { icon: <Award size={20} />, title: 'Won Sales Enquiry', count: counts.wonSalesEnquiry || 0, iconBg: 'bg-green-500', onClick: () => navigate("/search-sales-enquiry") },
+        { icon: <FileDigit size={20} />, title: 'Quotations', count: counts.quotationCount || 0, iconBg: 'bg-gray-700', onClick: () => navigate("/search-quotation") },
         { icon: <FileDigit size={20} />, title: 'Quotation Value', count: `₹${(counts.totalQuotationValue || 0).toLocaleString('en-IN')}`, iconBg: 'bg-purple-600' },
-        { icon: <Users size={20} />, title: 'Total Customers', count: counts.totalCustomers || 0, iconBg: 'bg-orange-500' },
-        { icon: <Building size={20} />, title: 'Total Sites', count: counts.totalSites || 0, iconBg: 'bg-orange-500' },
-        { icon: <Building size={20} />, title: 'Active Sites', count: counts.activeSites || 0, iconBg: 'bg-orange-500' },
-        { icon: <ClipboardList size={20} />, title: 'Active Jobs', count: counts.activeJobs || 0, iconBg: 'bg-green-600' },
-        { icon: <Phone size={20} />, title: 'New Calls', count: counts.newCalls || 0, iconBg: 'bg-blue-500' },
-        { icon: <Calendar size={20} />, title: 'Scheduled Calls', count: counts.scheduledCalls || 0, iconBg: 'bg-purple-500' },
-        { icon: <CheckSquare size={20} />, title: 'Completed Calls', count: counts.completedCalls || 0, iconBg: 'bg-green-500' },
-        { icon: <FileX size={20} />, title: 'DC Pending Invoice', count: counts.dcPendingInvoice || 0, iconBg: 'bg-orange-400' },
-        { icon: <Truck size={20} />, title: 'Total Suppliers', count: counts.totalSuppliers || 0, iconBg: 'bg-gray-700' },
-        { icon: <Truck size={20} />, title: 'Active Suppliers', count: counts.activeSuppliers || 0, iconBg: 'bg-gray-700' },
-        { icon: <Package size={20} />, title: 'Total Products', count: counts.totalProducts || 0, iconBg: 'bg-gray-700' },
-        { icon: <Package size={20} />, title: 'Available Products', count: counts.availableProducts || 0, iconBg: 'bg-green-500' },
+        { icon: <Users size={20} />, title: 'Total Customers', count: counts.totalCustomers || 0, iconBg: 'bg-orange-500', onClick: () => navigate("/search-customer") },
+        { icon: <Building2 size={20} />, title: 'Total Sites', count: counts.totalSites || 0, iconBg: 'bg-orange-500', onClick: () => navigate("/search-site") },
+        { icon: <Building size={20} />, title: 'Active Sites', count: counts.activeSites || 0, iconBg: 'bg-orange-500', onClick: () => navigate("/search-site") },
+        { icon: <ClipboardList size={20} />, title: 'Active Jobs', count: counts.activeJobs || 0, iconBg: 'bg-green-600', onClick: () => setActiveJobModal(true) },
+        { icon: <Calendar size={20} />, title: 'Scheduled Calls', count: counts.scheduledCalls || 0, iconBg: 'bg-purple-500', onClick: () => setScheduledCallsModal(true) },
+        { icon: <CheckSquare size={20} />, title: 'Completed Calls', count: counts.completedCalls || 0, iconBg: 'bg-green-500', onClick: () => setCompletedCallsModal(true) },
+        { icon: <FileX size={20} />, title: 'DC Pending Invoice', count: counts.dcPendingInvoice || 0, iconBg: 'bg-orange-400', onClick: () => navigate("/delivery-chalan") },
+        { icon: <Truck size={20} />, title: 'Total Suppliers', count: counts.totalSuppliers || 0, iconBg: 'bg-gray-700', onClick: () => navigate("/search-supplier") },
+        { icon: <Truck size={20} />, title: 'Active Suppliers', count: counts.activeSuppliers || 0, iconBg: 'bg-gray-700', onClick: () => navigate("/search-supplier") },
+        { icon: <Package size={20} />, title: 'Total Products', count: counts.totalProducts || 0, iconBg: 'bg-gray-700', onClick: () => navigate("/price-list") },
+        { icon: <Package size={20} />, title: 'Available Products', count: counts.availableProducts || 0, iconBg: 'bg-green-500', onClick: () => navigate("/price-list") },
     ];
 
     const salesPriority = [
@@ -562,6 +644,257 @@ const Dashboard = () => {
         }
         return null;
     };
+
+    // Modal Component
+    const ExpiringModal = ({ isOpen, onClose, title, data, type }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-500 ease-out translate-y-[50px] opacity-0 animate-slideDown">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="text-lg font-semibold">{title}</h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    <div className="p-4">
+                        {data.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">System</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {type === 'amc' ? 'AMC End Date' : 'Warranty End Date'}
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Remaining</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {data.map((item, index) => (
+                                            <tr key={index} className={item.daysRemaining <= 7 ? 'bg-red-50' : item.daysRemaining <= 15 ? 'bg-orange-50' : 'bg-white'}>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.customerName}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.siteName}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.systemName}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                    {new Date(type === 'amc' ? item.amcEndDate : item.warrantyDate).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                                    <span className={
+                                                        item.daysRemaining <= 7 ? 'text-red-600' :
+                                                            item.daysRemaining <= 15 ? 'text-orange-600' :
+                                                                'text-green-600'
+                                                    }>
+                                                        {item.daysRemaining} days
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                No {type === 'amc' ? 'AMC contracts' : 'warranties'} expiring in the next 30 days.
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end p-4 border-t">
+                        <button
+                            onClick={onClose}
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const ActiveJobModal = ({ isOpen, onClose, title, data }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-500 ease-out translate-y-[50px] opacity-0 animate-slideDown">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="text-lg font-semibold">{title}</h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    <div className="p-4">
+                        {dashboardData.Diaries.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Number</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Type</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Priority
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site System</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {dashboardData.Diaries.map((item, index) => (
+                                            item.status !== 'completed' && (
+                                                <tr key={index} className='bg-white'>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{new Date(item.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_number}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_type.name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {item.callLog.priority}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_id.site_name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_system.systemName}</td>
+                                                </tr>
+                                            )
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                No Active Jobs.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div >
+        )
+    }
+
+    const ScheduledCallsModal = ({ isOpen, onClose, title, data }) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-500 ease-out translate-y-[50px] opacity-0 animate-slideDown">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="text-lg font-semibold">{title}</h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div className="p-4">
+                        {dashboardData.Diaries.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Number</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Type</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Priority
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site System</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {dashboardData.Diaries.map((item, index) => (
+                                            item.status === 'scheduled' && (
+                                                <tr key={index} className='bg-white'>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{new Date(item.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_number}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_type.name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {item.callLog.priority}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_id.site_name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_system.systemName}</td>
+                                                </tr>
+                                            )
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                No Scheduled Calls.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>)
+    }
+
+    const CompltedCallsModal = ({ isOpen, onClose, title, data }) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-500 ease-out translate-y-[50px] opacity-0 animate-slideDown">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="text-lg font-semibold">{title}</h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div className="p-4">
+                        {dashboardData.Diaries.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Number</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Type</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Priority
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site System</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {dashboardData.Diaries.map((item, index) => (
+                                            item.status === 'completed' && (
+                                                <tr key={index} className='bg-white'>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{new Date(item.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_number}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{item.callLog.call_type.name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {item.callLog.priority}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_id.site_name}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.callLog.site_system.systemName}</td>
+                                                </tr>
+                                            )
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                No Scheduled Calls.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>)
+    }
 
     if (loading) {
         return (
@@ -655,15 +988,54 @@ const Dashboard = () => {
                     {/* Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-6">
                         {cards.map((card, index) => (
-                            <DashboardCard
-                                key={index}
-                                icon={card.icon}
-                                title={card.title}
-                                count={card.count}
-                                iconBg={card.iconBg}
-                            />
+                            <div key={index} onClick={card.onClick} className={card.onClick ? 'cursor-pointer' : ''}>
+                                <DashboardCard
+                                    icon={card.icon}
+                                    title={card.title}
+                                    count={card.count}
+                                    iconBg={card.iconBg}
+                                />
+                            </div>
                         ))}
                     </div>
+
+                    {/* AMC Expiring Modal */}
+                    <ExpiringModal
+                        isOpen={amcModalOpen}
+                        onClose={() => setAmcModalOpen(false)}
+                        title="AMC Expiring Details"
+                        data={amcExpiringDetails}
+                        type="amc"
+                    />
+
+                    {/* Warranty Expiring Modal */}
+                    <ExpiringModal
+                        isOpen={warrantyModalOpen}
+                        onClose={() => setWarrantyModalOpen(false)}
+                        title="Warranty Expiring Details"
+                        data={warrantyExpiringDetails}
+                        type="warranty"
+                    />
+
+                    {/* Active Job Modal */}
+                    <ActiveJobModal
+                        isOpen={activeJobModal}
+                        onClose={() => setActiveJobModal(false)}
+                        title="Active Jobs"
+                    />
+
+
+                    {/* Scheduled Calls Modal */}
+                    <ScheduledCallsModal
+                        isOpen={scheduledCallsModal}
+                        onClose={() => setScheduledCallsModal(false)}
+                        title="Scheduled Calls"
+                    />
+                    <CompltedCallsModal
+                        isOpen={completedCallsModal}
+                        onClose={() => setCompletedCallsModal(false)}
+                        title="Completed Calls"
+                    />
 
                     {/* Sales Priority Section */}
                     <div className="bg-white p-6 rounded-lg shadow-md mb-6">

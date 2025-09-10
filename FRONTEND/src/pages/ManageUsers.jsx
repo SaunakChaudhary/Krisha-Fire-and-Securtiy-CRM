@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { FiEdit, FiKey, FiSearch, FiDownload, FiTrash2, FiTool } from 'react-icons/fi';
+import { FiEdit, FiKey, FiSearch, FiDownload, FiTrash2, FiTool, FiX } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from "../Context/AuthContext";
+import { Upload } from 'lucide-react';
 
 const ManageUsers = () => {
     const { user } = useContext(AuthContext);
-
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -115,7 +115,7 @@ const ManageUsers = () => {
                 };
             });
 
-            setUsers(processedUsers);
+            setUsers(processedUsers.filter(user => user.accesstype != "Super Admin"));
             setAccessTypes(Array.from(accessTypeSet).map(str => JSON.parse(str)));
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -332,7 +332,6 @@ const ManageUsers = () => {
         }
     }, [selectedUser]);
 
-
     // Pagination controls
     const PaginationControls = () => (
         <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -459,6 +458,45 @@ const ManageUsers = () => {
         </div>
     );
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheetName = workbook.SheetNames[0]; // first sheet
+                const sheet = workbook.Sheets[sheetName];
+                const parsedData = XLSX.utils.sheet_to_json(sheet); // Excel → JSON
+
+                // Send to backend
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/user/bulk-upload`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(parsedData),
+                    }
+                );
+
+                const data1 = await response.json()
+                if (response.ok) {
+                    fetchUsers(); 
+                } else {
+                    const errorData = await response.json();
+                    console.error("Failed to upload users:", errorData);
+                }
+            } catch (err) {
+                console.error("Error processing file:", err);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -492,17 +530,27 @@ const ManageUsers = () => {
                                     <FiDownload />
                                     <span>Export</span>
                                 </button>
+                                <div className="flex items-center space-x-3 bg-white shadow-sm border rounded-lg px-4 py-2 w-fit">
+                                    <Upload className="w-5 h-5 text-blue-600" />
+                                    <label
+                                        htmlFor="fileInput"
+                                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                                    >
+                                        Upload Excel File
+                                    </label>
+                                    <input
+                                        id="fileInput"
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <div className="font-semibold mb-4 text-gray-600">
                             No of Users: {filteredUsers().length}
                         </div>
-
-                        {errors.api && (
-                            <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
-                                {errors.api}
-                            </div>
-                        )}
 
                         {/* Mobile Cards View */}
                         <div className="md:hidden space-y-4">

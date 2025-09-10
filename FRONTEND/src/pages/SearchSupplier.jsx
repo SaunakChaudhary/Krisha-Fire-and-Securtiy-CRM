@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from "../Context/AuthContext";
+import { Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const SearchSupplier = () => {
     const { user } = useContext(AuthContext);
@@ -151,6 +153,117 @@ const SearchSupplier = () => {
         });
     };
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const parsedData = XLSX.utils.sheet_to_json(sheet);
+
+                // 🔥 Transform flat Excel → nested JSON for backend
+                const formattedData = parsedData.map((row) => ({
+                    supplierName: row.supplierName || "",
+                    status: row.status || "Active",
+                    gstNo: row.gstNo || "",
+
+                    registeredAddress: {
+                        address_line_1: row.reg_address_line_1 && row.reg_address_line_1 !== "-" ? row.reg_address_line_1 : "",
+                        address_line_2: row.reg_address_line_2 && row.reg_address_line_2 !== "-" ? row.reg_address_line_2 : "",
+                        address_line_3: row.reg_address_line_3 && row.reg_address_line_3 !== "-" ? row.reg_address_line_3 : "",
+                        address_line_4: row.reg_address_line_4 && row.reg_address_line_4 !== "-" ? row.reg_address_line_4 : "",
+                        postCode: row.reg_postCode || "",
+                        country: row.reg_country || "",
+                        state: row.reg_state || "",
+                        city: row.reg_city || "",
+                    },
+
+                    communicationAddress: {
+                        address_line_1: row.comm_address_line_1 && row.comm_address_line_1 !== "-" ? row.comm_address_line_1 : "",
+                        address_line_2: row.comm_address_line_2 && row.comm_address_line_2 !== "-" ? row.comm_address_line_2 : "",
+                        address_line_3: row.comm_address_line_3 && row.comm_address_line_3 !== "-" ? row.comm_address_line_3 : "",
+                        address_line_4: row.comm_address_line_4 && row.comm_address_line_4 !== "-" ? row.comm_address_line_4 : "",
+                        postCode: row.comm_postCode || "",
+                        country: row.comm_country || "",
+                        state: row.comm_state || "",
+                        city: row.comm_city || "",
+                    },
+
+                    sameAsRegistered: row.sameAsRegistered === "TRUE" || row.sameAsRegistered === true,
+
+                    contacts: [
+                        {
+                            title: row.contact_title || "",
+                            contact_person: row.contact_person || "",
+                            position: row.contact_position || "",
+                            email: row.contact_email || "",
+                            telephoneNo: row.contact_telephoneNo || "",
+                            mobileNo: row.contact_mobileNo || "",
+                        },
+                    ],
+
+                    bankDetails: {
+                        bankName: row.bankName || "",
+                        bankAddress: row.bankAddress || "",
+                        accountNumber: row.accountNumber || "",
+                        ifsc: row.ifsc || "",   // 🔥 Ensure always string, not undefined
+                    },
+
+                    terms: {
+                        creditLimit: row.creditLimit || 0,
+                        tradeDiscount: row.tradeDiscount || 0,
+                        settlementDiscount: row.settlementDiscount || 0,
+                        settlementDays: row.settlementDays || 0,
+                        minOrderValue: row.minOrderValue || 0,
+                        defaultPurchaseOrderSubmissionMethod: row.poMethod || "Email",
+                    },
+
+                    subcontractor: {
+                        isSubcontractor: row.isSubcontractor === "TRUE" || row.isSubcontractor === true,
+                        hasInsuranceDocuments: row.hasInsuranceDocuments === "TRUE" || row.hasInsuranceDocuments === true,
+                        hasHealthSafetyPolicy: row.hasHealthSafetyPolicy === "TRUE" || row.hasHealthSafetyPolicy === true,
+                        insuranceExpirationDate: row.insuranceExpirationDate || null,
+                        healthSafetyPolicyExpirationDate: row.healthSafetyPolicyExpirationDate || null,
+                    },
+
+                    analysis: {
+                        gstExempt: row.gstExempt === "TRUE" || row.gstExempt === true,
+                        currencyCode: row.currencyCode || "INR",
+                    },
+                }));
+
+                // ✅ send formattedData, not parsedData
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/supplier/import`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(formattedData),
+                    }
+                );
+
+                const data1 = await response.json();
+
+                if (response.ok) {
+                    toast.success(data1.message);
+                    fetchSuppliers();
+                } else {
+                    console.error("Upload failed:", data1);
+                }
+            } catch (err) {
+                console.error("Error processing file:", err);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
+
     // Mobile-friendly table row component
     const MobileSupplierRow = ({ supplier }) => (
         <div className="border-b border-gray-200 p-4 space-y-2">
@@ -213,6 +326,22 @@ const SearchSupplier = () => {
                                         <ChevronDown size={14} className="ml-1 sm:ml-2" />
                                     )}
                                 </button>
+                            </div>
+                            <div className="flex items-center space-x-3 bg-white shadow-sm border rounded-lg px-4 py-2 w-fit">
+                                <Upload className="w-5 h-5 text-blue-600" />
+                                <label
+                                    htmlFor="fileInput"
+                                    className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                                >
+                                    Upload Excel File
+                                </label>
+                                <input
+                                    id="fileInput"
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                />
                             </div>
                         </div>
 

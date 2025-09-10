@@ -155,7 +155,6 @@ const EditCall = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch all dropdown data and the existing call data in parallel
                 const [
                     callData,
                     sitesData,
@@ -166,7 +165,7 @@ const EditCall = () => {
                 ] = await Promise.all([
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/calls/${id}`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callType`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/work-type`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callReason`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/waitingReason`),
                     fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)

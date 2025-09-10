@@ -214,7 +214,6 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                                 subItems={[
                                     { icon: <Search size={16} />, label: 'Search Call', link: '/calls' },
                                     { icon: <UserPlus size={16} />, label: 'Add Call', link: '/add-call' },
-                                    { icon: <CalendarDays size={16} />, label: 'Preventative Maintenance' }
                                 ]}
                             />
                         )}
@@ -293,7 +292,7 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                                 ]}
                             />
                         )}
-                        
+
                         {hasPermission("Manage Cabinet") && (
                             <SidebarItem icon={<Archive size={18} />} label="Manage Cabinet" link="/manage-cabinet" />
                         )}

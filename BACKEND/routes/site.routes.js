@@ -7,5 +7,6 @@ router.get('/', siteController.getAllSites);
 router.get('/:id', siteController.getSiteById);
 router.put('/:id', siteController.updateSite);
 router.delete('/:id', siteController.deleteSite);
+router.post('/import', siteController.bulkUploadSites);
 
 module.exports = router;

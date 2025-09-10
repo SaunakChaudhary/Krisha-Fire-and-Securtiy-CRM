@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { Search, MapPin, Home, User, Phone, Edit, Trash2, Eye, Plus, ChevronDown, ChevronUp, Settings, Settings2Icon } from 'lucide-react';
 import { AuthContext } from "../Context/AuthContext";
+import { Upload } from 'lucide-react';
 
 const ManageSites = () => {
     const { user } = useContext(AuthContext);
@@ -164,6 +166,45 @@ const ManageSites = () => {
         Dead: "bg-red-100 text-red-800"
     };
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheetName = workbook.SheetNames[0]; // first sheet
+                const sheet = workbook.Sheets[sheetName];
+                const parsedData = XLSX.utils.sheet_to_json(sheet); // Excel → JSON
+
+                // Send to backend
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/sites/import`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(parsedData),
+                    }
+                );
+
+                if (response.ok) {
+                    console.log("Sites uploaded successfully!");
+                    fetchData();
+                } else {
+                    const errorData = await response.json();
+                    console.error("Failed to upload users:", errorData);
+                }
+            } catch (err) {
+                console.error("Error processing file:", err);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -198,6 +239,23 @@ const ManageSites = () => {
                                     <Plus size={14} className="mr-1 sm:mr-2" />
                                     <span className="sm:inline">Add New Site</span>
                                 </Link>
+                                <div className="flex items-center space-x-3 bg-white shadow-sm border rounded-lg px-4 py-2 w-fit">
+                                    <Upload className="w-5 h-5 text-blue-600" />
+                                    <label
+                                        htmlFor="fileInput"
+                                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                                    >
+                                        Upload Excel File
+                                    </label>
+                                    <input
+                                        id="fileInput"
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </div>
+
                             </div>
                         </div>
 

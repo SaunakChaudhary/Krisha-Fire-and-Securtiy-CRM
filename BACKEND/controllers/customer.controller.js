@@ -1,4 +1,5 @@
 const Customer = require("../models/customer.model");
+const Company = require("../models/company.model");
 const mongoose = require("mongoose");
 
 const createCustomer = async (req, res) => {
@@ -39,7 +40,9 @@ const createCustomer = async (req, res) => {
 
     // Required field validation
     if (!customer_name || !status) {
-      return res.status(400).json({ error: "Customer name and status are required" });
+      return res
+        .status(400)
+        .json({ error: "Customer name and status are required" });
     }
 
     // Auto-generate customer code
@@ -88,7 +91,9 @@ const createCustomer = async (req, res) => {
       next_follow_up_date: status === "lead" ? next_follow_up_date : undefined,
       is_converted,
       pan_no,
-      company_id: company_id ? new mongoose.Types.ObjectId(company_id) : undefined,
+      company_id: company_id
+        ? new mongoose.Types.ObjectId(company_id)
+        : undefined,
     });
 
     res.status(201).json(customer);
@@ -102,7 +107,7 @@ const getAllCustomers = async (req, res) => {
   try {
     const { status, company_id } = req.query;
     const filter = {};
-    
+
     if (status) filter.status = status;
     if (company_id) filter.company_id = new mongoose.Types.ObjectId(company_id);
 
@@ -185,7 +190,9 @@ const updateCustomer = async (req, res) => {
 
     // Required field validation
     if (!customer_name || !status) {
-      return res.status(400).json({ error: "Customer name and status are required" });
+      return res
+        .status(400)
+        .json({ error: "Customer name and status are required" });
     }
 
     const updateData = {
@@ -215,7 +222,9 @@ const updateCustomer = async (req, res) => {
       credit_withdrawn,
       payment_due_EOM_Terms,
       pan_no,
-      company_id: company_id ? new mongoose.Types.ObjectId(company_id) : undefined,
+      company_id: company_id
+        ? new mongoose.Types.ObjectId(company_id)
+        : undefined,
     };
 
     // Only update lead-specific fields if status is lead
@@ -231,11 +240,10 @@ const updateCustomer = async (req, res) => {
       updateData.is_converted = undefined;
     }
 
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate("company_id", "company_name");
+    const updatedCustomer = await Customer.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).populate("company_id", "company_name");
 
     if (!updatedCustomer) {
       return res.status(404).json({ error: "Customer not found" });
@@ -269,7 +277,129 @@ const deleteCustomer = async (req, res) => {
   }
 };
 
+const bulkUploadCustomers = async (req, res) => {
+  try {
+    const customersData = req.body;
+
+    if (!Array.isArray(customersData) || customersData.length === 0) {
+      return res.status(400).json({ message: "Invalid or empty data" });
+    }
+
+    const createdCustomers = [];
+    const errors = [];
+
+    // Get latest customer code for starting point
+    const latestCustomer = await Customer.findOne().sort({ createdAt: -1 });
+    let nextCodeNumber = 1;
+
+    if (latestCustomer && latestCustomer.customer_code) {
+      const match = latestCustomer.customer_code.match(/\d+$/);
+      if (match) {
+        nextCodeNumber = parseInt(match[0], 10) + 1;
+      }
+    }
+
+    for (let i = 0; i < customersData.length; i++) {
+      const data = customersData[i];
+      try {
+        // Auto-generate customer code
+        const customer_code = `CUST-${nextCodeNumber
+          .toString()
+          .padStart(4, "0")}`;
+        nextCodeNumber++;
+        
+        const company = await Company.findOne({
+          company_code: data.company_id,
+        });
+
+        const customer = new Customer({
+          customer_code,
+          customer_name: data.customer_name,
+          GST_No: data.GST_No,
+          GST_Exempt: data.GST_Exempt,
+          company_id: company._id,
+          status: data.status, // lead or customer
+
+          // Contact Person
+          Title: data.Title,
+          Contact_person: data.Contact_person,
+          contact_person_secondary: data.contact_person_secondary,
+          contact_person_designation: data.contact_person_designation,
+          contact_person_email: data.contact_person_email,
+          contact_person_mobile: data.contact_person_mobile,
+
+          // Address
+          address: {
+            line1: data.address_line1,
+            line2: data.address_line2,
+            line3: data.address_line3,
+            line4: data.address_line4,
+            city: data.city,
+            state: data.state,
+            country: data.country,
+            postcode: data.postcode,
+          },
+
+          // Communication
+          email: data.email,
+          telephone_no: data.telephone_no,
+          mobile_no: data.mobile_no,
+
+          // Bank Details
+          bank_name: data.bank_name,
+          account_number: data.account_number,
+          IFSC: data.IFSC,
+          bank_address: data.bank_address,
+
+          // Payment & Credit Details
+          Payment_method: data.Payment_method,
+          currency: data.currency || "INR",
+          credit_limit: data.credit_limit,
+          credit_days: data.credit_days,
+          creditCharge: data.creditCharge,
+          credit_withdrawn: data.credit_withdrawn,
+          payment_due_EOM_Terms: data.payment_due_EOM_Terms,
+
+          // Lead fields
+          lead_source: data.lead_source,
+          industry_type: data.industry_type,
+          next_follow_up_date: data.next_follow_up_date,
+          is_converted: data.is_converted,
+
+          pan_no: data.pan_no,
+        });
+
+        const savedCustomer = await customer.save();
+        createdCustomers.push(savedCustomer);
+      } catch (err) {
+        errors.push({
+          row: i + 1,
+          error: err.message,
+        });
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(207).json({
+        message: "Partial success",
+        inserted: createdCustomers.length,
+        failed: errors.length,
+        errors,
+      });
+    }
+
+    res.status(201).json({
+      message: "All customers uploaded successfully",
+      count: createdCustomers.length,
+    });
+  } catch (error) {
+    console.error("Bulk upload error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
+  bulkUploadCustomers,
   createCustomer,
   getAllCustomers,
   getCustomerById,

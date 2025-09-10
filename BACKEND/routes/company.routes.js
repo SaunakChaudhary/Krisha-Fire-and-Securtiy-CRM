@@ -1,5 +1,5 @@
 const express = require("express");
-const upload = require("../middleware/upload.js");
+const { upload } = require("../middleware/upload.js");
 const router = express.Router();
 
 const {
@@ -8,7 +8,7 @@ const {
   getCompanyById,
   updateCompany,
   deleteCompany,
-  getAllActiveCompanies
+  getAllActiveCompanies,
 } = require("../controllers/company.controller.js");
 
 router.post("/", upload.single("logo"), createCompany);

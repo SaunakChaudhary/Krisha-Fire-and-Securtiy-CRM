@@ -107,16 +107,11 @@ const CallList = () => {
     const fetchCalls = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`, );
 
             if (!response.ok) throw new Error('Failed to fetch calls');
-
             const data = await response.json();
-
+            
             const formattedCalls = data.data.map(call => ({
                 id: call.call_number,
                 _id: call._id,

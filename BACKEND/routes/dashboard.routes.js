@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { dashboarddDetails } = require("../controllers/dashboard.controller");
+const { dashboardDetails } = require("../controllers/dashboard.controller");
 
-router.get("/details", dashboarddDetails);
+router.get("/details", dashboardDetails);
 
 module.exports = router;

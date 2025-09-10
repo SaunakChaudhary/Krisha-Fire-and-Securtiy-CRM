@@ -303,18 +303,7 @@ const deleteUser = async (req, res) => {
 
 const getAllActiveUsers = async (req, res) => {
   try {
-    const superAdminAccessType = await AccessType.findOne({
-      name: "Super Admin",
-    }).lean();
-
-    if (!superAdminAccessType) {
-      return res
-        .status(500)
-        .json({ error: "Super Admin AccessType not found" });
-    }
-
     const users = await User.find({
-      accesstype_id: { $ne: superAdminAccessType._id },
       status: "active",
     })
       .populate("accesstype_id")
@@ -329,21 +318,7 @@ const getAllActiveUsers = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const superAdminAccessType = await AccessType.findOne({
-      name: "Super Admin",
-    }).lean();
-
-    if (!superAdminAccessType) {
-      return res
-        .status(500)
-        .json({ error: "Super Admin AccessType not found" });
-    }
-
-    const users = await User.find({
-      accesstype_id: { $ne: superAdminAccessType._id },
-    })
-      .populate("accesstype_id")
-      .lean();
+    const users = await User.find().populate("accesstype_id").lean();
 
     res.status(200).json({ users });
   } catch (error) {
@@ -504,19 +479,96 @@ const getEngineerByUser = async (req, res) => {
 const getAllEngineers = async (req, res) => {
   try {
     const engineers = await Engineer.find().populate("user_id").lean();
-    res
-      .status(200)
-      .json({
-        engineers: engineers.filter((eng) => eng.user_id.status === "active"),
-      });
+    res.status(200).json({
+      engineers: engineers.filter((eng) => eng.user_id.status === "active"),
+    });
   } catch (error) {
     console.error("Get all engineers error:", error);
     res.status(500).json({ error: "Failed to fetch engineers" });
   }
 };
 
+const bulkUploadUsers = async (req, res) => {
+  try {
+    const usersData = req.body;
+
+    if (!Array.isArray(usersData) || usersData.length === 0) {
+      return res.status(400).json({ message: "Invalid or empty data" });
+    }
+
+    const createdUsers = [];
+    const errors = [];
+
+    for (let i = 0; i < usersData.length; i++) {
+      const data = usersData[i];
+
+      const access_type = await AccessType.findOne({ name: data.accesstype_id });
+      
+      try {
+        // Create User
+        const user = new User({
+          firstname: data.firstname,
+          lastname: data.lastname,
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          accesstype_id: access_type._id,
+          status: data.status,
+        });
+        const savedUser = await user.save();
+
+        // If engineer fields exist, create Engineer
+        if (
+          data.eng_code ||
+          data.skill_level ||
+          data.commission !== undefined
+        ) {
+          const engineer = new Engineer({
+            user_id: savedUser._id,
+            eng_code: data.eng_code,
+            commission: data.commission,
+            skill_level: data.skill_level,
+            over_time: data.over_time,
+            address_line1: data.address_line1,
+            address_line2: data.address_line2,
+            address_line3: data.address_line3,
+            address_line4: data.address_line4,
+            postcode: data.postcode,
+          });
+          await engineer.save();
+        }
+
+        createdUsers.push(savedUser);
+      } catch (err) {
+        errors.push({
+          row: i + 1,
+          error: err.message,
+        });
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(207).json({
+        message: "Partial success",
+        inserted: createdUsers.length,
+        failed: errors.length,
+        errors,
+      });
+    }
+
+    res.status(201).json({
+      message: "All users uploaded successfully",
+      count: createdUsers.length,
+    });
+  } catch (error) {
+    console.error("Bulk upload error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   createUser,
+  bulkUploadUsers,
   getAllEngineers,
   updateUser,
   deleteUser,

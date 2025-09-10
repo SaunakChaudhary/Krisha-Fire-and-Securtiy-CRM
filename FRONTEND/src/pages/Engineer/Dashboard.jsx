@@ -143,6 +143,7 @@ const EngineerDashboard = () => {
     }
   }, [user]);
 
+  
   const updateTaskStatus = async (taskId, newStatusUI) => {
     const taskToUpdate = tasks.find(task => task.id === taskId);
     
@@ -165,7 +166,6 @@ const EngineerDashboard = () => {
         )
       );
 
-      // API call to persist status - using PUT method as per your backend
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/diary/entries/${taskId}`,
         {
@@ -178,7 +178,6 @@ const EngineerDashboard = () => {
       );
 
       const data = await res.json();
-      console.log(data)
       if (!data.success) {
         throw new Error(data.error || "Failed to update status");
       }

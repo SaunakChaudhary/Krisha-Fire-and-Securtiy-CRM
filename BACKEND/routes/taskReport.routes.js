@@ -44,7 +44,6 @@ router.post("/", submitTaskReport);
 router.get("/", getAllTaskReports);
 router.get("/:taskId", getTaskReport);
 router.put("/:taskId", editTaskReport);
-
 // Signature routes
 router.post("/save-signature", saveSignature);
 

@@ -123,9 +123,7 @@ exports.updateDiaryEntry = async (req, res) => {
       });
     }
 
-    // Apply updates
     Object.assign(entry, updates);
-    // no updatedBy field
     await entry.save();
 
     res.status(200).json({

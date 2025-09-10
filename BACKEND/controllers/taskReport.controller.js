@@ -100,7 +100,6 @@ const getTaskReport = async (req, res) => {
   }
 };
 
-
 // ========== GET ALL TASK REPORTS ==========
 const getAllTaskReports = async (req, res) => {
   try {

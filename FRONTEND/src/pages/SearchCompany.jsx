@@ -52,8 +52,7 @@ const SearchCompany = () => {
     } catch (error) {
       console.error("Error fetching permissions:", error);
       setPermissionsLoaded(true);
-    }
-  };
+    }  };
 
   useEffect(() => {
     if (user) {
@@ -104,23 +103,6 @@ const SearchCompany = () => {
 
     fetchCompanies();
   }, []);
-
-  const handleDelete = async (companyId) => {
-    if (window.confirm('Are you sure you want to delete this company?')) {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/${companyId}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) {
-          throw new Error('Failed to delete company');
-        }
-        setCompanies(companies.filter(company => company._id !== companyId));
-        toast.success('Company deleted successfully');
-      } catch (err) {
-        toast.error('Failed to delete company');
-      }
-    }
-  };
 
   const filteredCompanies = companies.filter((company) =>
     company.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -158,9 +158,7 @@ const WorkType = () => {
   };
 
   const toggleAssociationDisplay = async (typeIndex, assocId) => {
-
     try {
-
       const updatedWorkTypes = [...workTypes];
       const association = updatedWorkTypes[typeIndex].associatedDocketTypes.find(
         assoc => assoc._id === assocId
@@ -190,20 +188,36 @@ const WorkType = () => {
     }
   };
 
+  // Modified to ensure only one dropdown is open at a time
   const toggleWorkTypeExpansion = (typeId) => {
-    setExpandedWorkTypes(prev => ({ ...prev, [typeId]: !prev[typeId] }));
+    setExpandedWorkTypes(prev => {
+      // If the clicked type is already expanded, close it
+      if (prev[typeId]) {
+        const newState = { ...prev };
+        delete newState[typeId];
+        return newState;
+      } 
+      // Otherwise, close all others and open the clicked one
+      else {
+        return { [typeId]: true };
+      }
+    });
   };
 
   const openAddTypeModal = () => {
     setCurrentWorkType({ code: '', name: '', associatedDocketTypes: [] });
     setCurrentTypeIndex(null);
     setIsTypeModalOpen(true);
+    // Close any open dropdowns when opening modal
+    setExpandedWorkTypes({});
   };
 
   const openEditTypeModal = (type, index) => {
     setCurrentWorkType({ ...type });
     setCurrentTypeIndex(index);
     setIsTypeModalOpen(true);
+    // Close any open dropdowns when opening modal
+    setExpandedWorkTypes({});
   };
 
   const closeTypeModal = () => {
@@ -215,6 +229,8 @@ const WorkType = () => {
     setCurrentTypeIndex(index);
     setCurrentAssociation({ name: '', display: true });
     setIsAssociationModalOpen(true);
+    // Close any open dropdowns when opening modal
+    setExpandedWorkTypes({});
   };
 
   const closeAssociationModal = () => {
@@ -259,7 +275,7 @@ const WorkType = () => {
                 // Mobile view - card layout
                 <div className="divide-y divide-gray-200">
                   {workTypes.map((type, typeIndex) => (
-                    <div key={type.id} className="p-4">
+                    <div key={type._id || type.id} className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-lg font-medium text-gray-900">{type.name}</h3>
@@ -279,10 +295,10 @@ const WorkType = () => {
                       <div className="mt-3">
                         <div className="flex items-center justify-between">
                           <button
-                            onClick={() => toggleWorkTypeExpansion(type.id)}
+                            onClick={() => toggleWorkTypeExpansion(type._id || type.id)}
                             className="flex items-center text-blue-600 hover:text-blue-800"
                           >
-                            {expandedWorkTypes[type.id] ? (
+                            {expandedWorkTypes[type._id || type.id] ? (
                               <FiChevronUp className="mr-1" />
                             ) : (
                               <FiChevronDown className="mr-1" />
@@ -297,11 +313,11 @@ const WorkType = () => {
                           </button>
                         </div>
 
-                        {expandedWorkTypes[type.id] && (
+                        {expandedWorkTypes[type._id || type.id] && (
                           <div className="mt-2 space-y-2">
                             {type.associatedDocketTypes.map((assoc, assocIndex) => (
                               <div
-                                key={assocIndex}
+                                key={assoc._id || assocIndex}
                                 className={`flex items-center justify-between p-2 rounded-lg ${assoc.display ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-200'
                                   }`}
                               >
@@ -352,17 +368,17 @@ const WorkType = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {workTypes.map((type, typeIndex) => (
-                        <React.Fragment key={type.id}>
+                        <React.Fragment key={type._id || type.id}>
                           <tr className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{type.code}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{type.name}</td>
                             <td className="px-6 py-4 text-sm text-gray-900">
                               <div className="flex items-center">
                                 <button
-                                  onClick={() => toggleWorkTypeExpansion(type.id)}
+                                  onClick={() => toggleWorkTypeExpansion(type._id || type.id)}
                                   className="flex items-center text-blue-600 hover:text-blue-800 mr-3"
                                 >
-                                  {expandedWorkTypes[type.id] ? (
+                                  {expandedWorkTypes[type._id || type.id] ? (
                                     <FiChevronUp className="mr-1" />
                                   ) : (
                                     <FiChevronDown className="mr-1" />
@@ -387,13 +403,13 @@ const WorkType = () => {
                               </button>
                             </td>
                           </tr>
-                          {expandedWorkTypes[type.id] && (
+                          {expandedWorkTypes[type._id || type.id] && (
                             <tr>
                               <td colSpan="4" className="px-6 py-4 bg-gray-50">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                   {type.associatedDocketTypes.map((assoc, assocIndex) => (
                                     <div
-                                      key={assocIndex}
+                                      key={assoc._id || assocIndex}
                                       className={`flex items-center justify-between p-3 rounded-lg ${assoc.display ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-200'
                                         }`}
                                     >
@@ -581,7 +597,7 @@ const WorkType = () => {
                 </div>
               </div>
             </div>
-          </div>
+  </div>
         </div>
       )}
 

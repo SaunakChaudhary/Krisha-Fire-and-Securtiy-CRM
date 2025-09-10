@@ -448,27 +448,27 @@ const ViewCustomer = () => {
                                         <div className="sm:col-span-3">
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">Address</label>
                                             <div className="space-y-1">
-                                                <p className="text-sm sm:text-base text-gray-800">{customer.address.line1}</p>
-                                                {customer.address.line2 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line2}</p>}
-                                                {customer.address.line3 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line3}</p>}
-                                                {customer.address.line4 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line4}</p>}
+                                                <p className="text-sm sm:text-base text-gray-800">{customer.address?.line1}</p>
+                                                {customer.address?.line2 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line2}</p>}
+                                                {customer.address?.line3 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line3}</p>}
+                                                {customer.address?.line4 && <p className="text-sm sm:text-base text-gray-800">{customer.address.line4}</p>}
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">City</label>
-                                            <p className="text-sm sm:text-base text-gray-800">{customer.address.city}</p>
+                                            <p className="text-sm sm:text-base text-gray-800">{customer.address?.city}</p>
                                         </div>
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">State</label>
-                                            <p className="text-sm sm:text-base text-gray-800">{customer.address.state}</p>
+                                            <p className="text-sm sm:text-base text-gray-800">{customer.address?.state}</p>
                                         </div>
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">Country</label>
-                                            <p className="text-sm sm:text-base text-gray-800">{customer.address.country}</p>
+                                            <p className="text-sm sm:text-base text-gray-800">{customer.address?.country}</p>
                                         </div>
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-500 mb-1">Postcode</label>
-                                            <p className="text-sm sm:text-base text-gray-800">{customer.address.postcode || 'Not specified'}</p>
+                                            <p className="text-sm sm:text-base text-gray-800">{customer.address?.postcode || 'Not specified'}</p>
                                         </div>
                                     </div>
                                 </div>

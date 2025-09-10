@@ -1,4 +1,5 @@
 const Site = require("../models/site.model");
+const CustomerModel = require("../models/customer.model");
 const mongoose = require("mongoose");
 
 // Create a new Site
@@ -241,5 +242,103 @@ exports.deleteSite = async (req, res) => {
   } catch (error) {
     console.error("Error deleting site:", error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.bulkUploadSites = async (req, res) => {
+  try {
+    const sitesData = req.body;
+
+    if (!Array.isArray(sitesData) || sitesData.length === 0) {
+      return res.status(400).json({ message: "Invalid or empty data" });
+    }
+
+    const createdSites = [];
+    const errors = [];
+
+    // Get latest site_code for starting point
+    const lastSite = await Site.findOne().sort({ createdAt: -1 });
+    let nextNumber = 1;
+
+    if (lastSite && lastSite.site_code) {
+      const match = lastSite.site_code.match(/^SITE-(\d+)$/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    for (let i = 0; i < sitesData.length; i++) {
+      const data = sitesData[i];
+      try {
+        // Auto-generate site_code
+        const site_code = `SITE-${nextNumber.toString().padStart(4, "0")}`;
+        nextNumber++;
+
+        const customer = await CustomerModel.findOne({
+          customer_code: data.customer_id,
+        });
+
+        const site = new Site({
+          site_code,
+          customer_id: customer._id,
+          site_name: data.site_name,
+          status: data.status || "New",
+
+          // Address
+          address_line_1: data.address_line_1,
+          address_line_2: data.address_line_2,
+          address_line_3: data.address_line_3,
+          address_line_4: data.address_line_4,
+          postcode: data.postcode,
+          country: data.country,
+          state: data.state,
+          city: data.city,
+
+          // Contact Info
+          title: data.title,
+          contact_name: data.contact_name,
+          contact_no: data.contact_no,
+          contact_email: data.contact_email,
+          position: data.position,
+
+          // Other Details
+          premises_type: data.premises_type,
+          route: data.route,
+          distance: data.distance,
+          area: data.area,
+          sales_person: data.sales_person,
+          admin_remarks: data.admin_remarks,
+          site_remarks: data.site_remarks,
+
+          // Site Systems (if provided in Excel/JSON)
+          site_systems: data.site_systems || [],
+        });
+
+        const savedSite = await site.save();
+        createdSites.push(savedSite);
+      } catch (err) {
+        errors.push({
+          row: i + 1,
+          error: err.message,
+        });
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(207).json({
+        message: "Partial success",
+        inserted: createdSites.length,
+        failed: errors.length,
+        errors,
+      });
+    }
+
+    res.status(201).json({
+      message: "All sites uploaded successfully",
+      count: createdSites.length,
+    });
+  } catch (error) {
+    console.error("Bulk upload sites error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
