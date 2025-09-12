@@ -101,7 +101,7 @@ const CreatePurchaseOrder = () => {
         due_date: '',
         placed_by: '',
         notes: '',
-        deliver_to: '',
+        deliver_to: null,
         deliver_to_store: false,
         delivery_address: '',
         delivery_instructions: '',
@@ -300,7 +300,7 @@ const CreatePurchaseOrder = () => {
             toast.error('Could not determine the user creating this PO.');
             return;
         }
-        if (!formData.company_id || !formData.supplier_id || formData.products.length === 0) {
+        if (!formData.company_id || !formData.call_id || !formData.supplier_id || formData.products.length === 0) {
             toast.error('Please fill all required fields and add at least one product');
             return;
         }
@@ -492,7 +492,7 @@ const CreatePurchaseOrder = () => {
                                         </div>
                                         {/* Call Reference */}
                                         <div>
-                                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Call Reference</label>
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Call Reference*</label>
                                             <select
                                                 name="call_id"
                                                 value={formData.call_id}

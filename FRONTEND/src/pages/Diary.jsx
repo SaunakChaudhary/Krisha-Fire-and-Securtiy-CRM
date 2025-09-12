@@ -12,9 +12,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Printer,
-  Plus,
-  Trash2,
   RefreshCw,
   X,
   Check,
@@ -31,8 +28,9 @@ import {
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../Context/AuthContext";
+import {toast} from "react-hot-toast"
 
-// Move AssignmentModal outside the main component to prevent re-renders
+
 const AssignmentModal = ({
   isOpen,
   onClose,
@@ -536,6 +534,10 @@ const Diary = () => {
   };
 
   const handleDateChange = (newDate) => {
+    if(newDate == "Invalid Date"){
+      toast.error("Invalid Date")
+      return ;
+    }
     setCurrentDate(newDate);
   };
 

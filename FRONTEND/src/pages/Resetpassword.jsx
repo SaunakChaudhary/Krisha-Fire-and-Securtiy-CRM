@@ -27,7 +27,7 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_API}/reset-password/${token}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -35,12 +35,12 @@ const ResetPassword = () => {
       const data = await res.json();
       if (res.ok) {
         setSuccess(data.message || 'Password reset successful!');
-        setTimeout(() => navigate('/login'), 2500);
+        setTimeout(() => navigate('/'), 2500);
       } else {
         setError(data.message || 'Reset link expired or invalid');
       }
     } catch (err) {
-      setError('Something went wrong, please try again.');
+      setError('Something went wrong, please try again.' + err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ const ResetPassword = () => {
             <button
               type="button"
               className="text-blue-600 hover:underline"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/')}
               tabIndex={-1}
             >
               Back to Login

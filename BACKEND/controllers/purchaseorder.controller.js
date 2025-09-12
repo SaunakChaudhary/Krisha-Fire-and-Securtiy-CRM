@@ -29,7 +29,7 @@ exports.createPurchaseOrder = async (req, res) => {
 
       await Product.bulkWrite(bulkUpdates);
     }
-
+    
     // Validate placed_by
     if (
       !purchaseOrderData.placed_by ||
@@ -103,7 +103,10 @@ exports.updatePurchaseOrder = async (req, res) => {
     const updateData = req.body;
 
     // Validate placed_by
-    if (!updateData.placed_by || !mongoose.Types.ObjectId.isValid(updateData.placed_by)) {
+    if (
+      !updateData.placed_by ||
+      !mongoose.Types.ObjectId.isValid(updateData.placed_by)
+    ) {
       delete updateData.placed_by;
     }
 
@@ -117,22 +120,24 @@ exports.updatePurchaseOrder = async (req, res) => {
     if (Array.isArray(updateData.products) && updateData.products.length > 0) {
       // Revert old stock
       const revertStockOps = existingPO.products
-        .filter(p => p.product_id) // ensure product_id exists
+        .filter((p) => p.product_id) // ensure product_id exists
         .map(({ product_id, quantity }) => ({
           updateOne: {
             filter: { _id: new mongoose.Types.ObjectId(product_id) },
-            update: { $inc: { units: -quantity } }
-          }
+            update: { $inc: { units: -quantity } },
+          },
         }));
 
       // Apply new stock
       const newStockOps = updateData.products
-        .filter(p => p.product_id && mongoose.Types.ObjectId.isValid(p.product_id))
+        .filter(
+          (p) => p.product_id && mongoose.Types.ObjectId.isValid(p.product_id)
+        )
         .map(({ product_id, quantity }) => ({
           updateOne: {
             filter: { _id: new mongoose.Types.ObjectId(product_id) },
-            update: { $inc: { units: quantity } }
-          }
+            update: { $inc: { units: quantity } },
+          },
         }));
 
       if (revertStockOps.length > 0 || newStockOps.length > 0) {
@@ -156,8 +161,6 @@ exports.updatePurchaseOrder = async (req, res) => {
     });
   }
 };
-
-
 
 exports.deletePurchaseOrder = async (req, res) => {
   try {
