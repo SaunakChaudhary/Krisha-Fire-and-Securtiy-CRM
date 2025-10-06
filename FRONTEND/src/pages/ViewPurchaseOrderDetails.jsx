@@ -183,21 +183,6 @@ const ViewPurchaseOrderDetails = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handlePrint}
-                    className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
-                  >
-                    <Printer size={16} className="mr-1" />
-                    Print
-                  </button>
-                  <button className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
-                    <Download size={16} className="mr-1" />
-                    Download
-                  </button>
-                  <button className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
-                    <Mail size={16} className="mr-1" />
-                    Email
-                  </button>
                   <Link
                     to={`/purchase-orders/edit/${purchaseOrder._id}`}
                     className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
