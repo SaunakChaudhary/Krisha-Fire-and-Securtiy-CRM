@@ -1065,6 +1065,7 @@ const Dashboard = () => {
     useEffect(() => {
         if (dashboardData) {
             getNextServices();
+            setServicesReady(true); 
         }
     }, [dashboardData, year, month]);
 
@@ -1076,7 +1077,7 @@ const Dashboard = () => {
         dashboardData?.AMCandWarrenty?.forEach(site => {
             site.site_systems?.forEach(system => {
 
-                if (system.amc_end_date && getDaysRemaining(system.amc_end_date) === 2) {
+                if (system.amc_end_date && getDaysRemaining(system.amc_end_date) >= 0 && getDaysRemaining(system.amc_end_date) <= 2) {
                     const key = getAlertKey("AMC", site.site_name, system.system_id?.systemName, system.amc_end_date);
                     if (!shown.includes(key)) {
                         alerts.push({
@@ -1089,7 +1090,7 @@ const Dashboard = () => {
                     }
                 }
 
-                if (system.warranty_date && getDaysRemaining(system.warranty_date) === 2) {
+                if (system.warranty_date && getDaysRemaining(system.warranty_date) >= 0 && getDaysRemaining(system.warranty_date) <= 2) {
                     const key = getAlertKey("Warranty", site.site_name, system.system_id?.systemName, system.warranty_date);
                     if (!shown.includes(key)) {
                         alerts.push({
@@ -1106,13 +1107,13 @@ const Dashboard = () => {
 
         // 🟢 SERVICE ALERTS (NOW GUARANTEED READY)
         nextServices.forEach(service => {
-            if (service.daysRemaining === 2) {
+            if (service.daysRemaining >= 0 && service.daysRemaining <= 2) {
                 const key = getAlertKey("Service", service.siteName, service.systemName, service.serviceDate);
                 if (!shown.includes(key)) {
                     alerts.push({
                         type: "Service",
                         siteName: service.siteName,
-                        systemName: getSystemNameById(service.systemName),
+                        systemName: service.systemName,
                         date: service.serviceDate
                     });
                     shown.push(key);
@@ -1149,16 +1150,6 @@ const Dashboard = () => {
             setCurrentAlert(remaining.length > 0 ? remaining[0] : null);
             return remaining;
         });
-    };
-
-    const isWithinNextWeek = (serviceDate) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const diffInMs = serviceDate - today;
-        const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
-
-        return diffInDays >= 0 && diffInDays <= 7;
     };
 
     if (loading) {

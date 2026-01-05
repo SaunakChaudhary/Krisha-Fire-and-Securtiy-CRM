@@ -13,8 +13,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      'http://localhost:5173',
-      'https://erp.krishaengg.com'  
+      'https://ems.krishaengg.com'  ,
+      'http://localhost:5173'
     ],
     credentials: true,
   })  
