@@ -40,7 +40,7 @@ const SearchSalesEnquiry = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -108,7 +108,7 @@ const SearchSalesEnquiry = () => {
         const fetchSalesEnquiry = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry`);
                 const data = await response.json();
 
                 setEnquiries(data);

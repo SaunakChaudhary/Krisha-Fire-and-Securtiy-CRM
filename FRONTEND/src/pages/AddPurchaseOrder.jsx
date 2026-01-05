@@ -39,7 +39,7 @@ const CreatePurchaseOrder = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -122,23 +122,23 @@ const CreatePurchaseOrder = () => {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const companiesRes = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+                const companiesRes = await fetch(`${import.meta.env.VITE_API_URL}/company`);
                 const companiesData = await companiesRes.json();
                 setCompanies(companiesData);
 
-                const suppliersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/supplier`);
+                const suppliersRes = await fetch(`${import.meta.env.VITE_API_URL}/supplier`);
                 const suppliersData = await suppliersRes.json();
                 setSuppliers(suppliersData.data.filter(sup => sup.status === "Active"));
 
-                const customersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+                const customersRes = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
                 const customersData = await customersRes.json();
                 setCustomers(customersData);
 
-                const productsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+                const productsRes = await fetch(`${import.meta.env.VITE_API_URL}/products`);
                 const productsData = await productsRes.json();
                 setProducts(productsData.data);
 
-                const callsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`);
+                const callsRes = await fetch(`${import.meta.env.VITE_API_URL}/calls`);
                 const callsData = await callsRes.json();
                 setCalls(callsData.data);
 
@@ -306,7 +306,7 @@ const CreatePurchaseOrder = () => {
         }
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/purchase-order`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-order`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -398,12 +398,6 @@ const CreatePurchaseOrder = () => {
                                     <Save size={14} className="mr-1 sm:mr-2" />
                                     <span className="hidden sm:inline">Save PO</span>
                                     <span className="sm:hidden">Save</span>
-                                </button>
-                                <button
-                                    className="flex items-center px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition"
-                                >
-                                    <Printer size={14} className="mr-1 sm:mr-2" />
-                                    <span className="hidden sm:inline">Print</span>
                                 </button>
                             </div>
                         </div>
@@ -531,11 +525,12 @@ const CreatePurchaseOrder = () => {
                                             />
                                         </div>
                                         {/* Placed By */}
+                                        
                                         <div>
                                             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Placed By</label>
                                             <input
                                                 type="text"
-                                                value={user.user?.firstname + " " + user.user?.lastname || ''}
+                                                value={user?.firstname ? user?.firstname + " " + user?.lastname  : user.user?.firstname + " " + user.user?.lastname}
                                                 readOnly
                                                 className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-100 border border-gray-300 rounded-md"
                                             />

@@ -40,7 +40,7 @@ const AddQuotation = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -143,7 +143,7 @@ const AddQuotation = () => {
   // API call to fetch companies
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/company`);
       if (!response.ok) throw new Error('Failed to fetch companies');
       const data = await response.json();
       setCompanies(data);
@@ -158,7 +158,7 @@ const AddQuotation = () => {
   // API call to fetch systems
   const fetchSystems = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/systems`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/systems`);
       if (!response.ok) throw new Error('Failed to fetch systems');
       const data = await response.json();
       setSystems(data.systems);
@@ -173,7 +173,7 @@ const AddQuotation = () => {
   // API call to fetch products
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
       setProducts(data.data);
@@ -189,7 +189,7 @@ const AddQuotation = () => {
   const fetchCustomersByCompany = async (companyId) => {
     try {
       setLoading(prev => ({ ...prev, customers: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers?company_id=${companyId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/customers?company_id=${companyId}`);
       if (!response.ok) throw new Error('Failed to fetch customers');
       const data = await response.json();
       setCustomers(data);
@@ -205,7 +205,7 @@ const AddQuotation = () => {
   const fetchSitesByCustomer = async (customerId) => {
     try {
       setLoading(prev => ({ ...prev, sites: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites?customer_id=${customerId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites?customer_id=${customerId}`);
       if (!response.ok) throw new Error('Failed to fetch sites');
       const data = await response.json();
       setSites(data);
@@ -221,7 +221,7 @@ const AddQuotation = () => {
   const createQuotation = async (quotationData) => {
     try {
       setLoading(prev => ({ ...prev, submitting: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quotation`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/quotation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ const AddQuotation = () => {
   const fetchSalesEnquiriesBySite = async (siteId) => {
     try {
       setLoading(prev => ({ ...prev, salesEnquiries: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry`);
       // Server currently returns data with non-200 status; avoid strict ok checks
       const data = await response.json();
       // data is populated with site object; filter by selected site id
@@ -273,7 +273,7 @@ const AddQuotation = () => {
   const fetchSiteSystems = async (siteId) => {
     try {
       setLoading(prev => ({ ...prev, siteSystems: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/${siteId}`);
       const site = await response.json();
       const systemsFromSite = Array.isArray(site?.site_systems)
         ? site.site_systems
@@ -915,12 +915,12 @@ const AddQuotation = () => {
                                     )}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.quantity}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.price.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.price || product.price?.toFixed(2)}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.gst_percent}%</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.total_amount.toFixed(2)}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_price.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.total_amount != null ? Number(product.total_amount).toFixed(2) : "--"}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_price != null ? Number(product.installation_price).toFixed(2) : "--"}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_gst_percent}%</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_amount.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_amount != null ? Number(product.installation_amount).toFixed(2) : "--"}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                                     <button
                                       onClick={() => removeProduct(product.id)}
@@ -989,7 +989,7 @@ const AddQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Price:</span>
-                                  <span className="ml-1">{product.price.toFixed(2)}</span>
+                                  <span className="ml-1">{product.price != null ? Number(product.price).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">GST:</span>
@@ -997,11 +997,11 @@ const AddQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Amount:</span>
-                                  <span className="ml-1">{product.total_amount.toFixed(2)}</span>
+                                  <span className="ml-1">{product.total_amount != null ? Number(product.total_amount).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. Price:</span>
-                                  <span className="ml-1">{product.installation_price.toFixed(2)}</span>
+                                  <span className="ml-1">{product.installation_price != null ? Number(product.installation_price).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. GST:</span>
@@ -1009,7 +1009,7 @@ const AddQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. Amount:</span>
-                                  <span className="ml-1">{product.installation_amount.toFixed(2)}</span>
+                                  <span className="ml-1">{product.installation_amount != null ? Number(product.installation_amount).toFixed(2) : "--"}</span>
                                 </div>
                               </div>
                             </div>

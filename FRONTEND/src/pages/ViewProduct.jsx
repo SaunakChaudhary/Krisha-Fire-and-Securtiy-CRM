@@ -41,7 +41,7 @@ const ViewProduct = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -83,7 +83,7 @@ const ViewProduct = () => {
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`);
                 const data = await response.json();
 
                 if (response.ok) {
@@ -357,7 +357,7 @@ const ViewProduct = () => {
                                 </div>
                                 <div className="p-6 flex justify-center">
                                     <img
-                                        src={import.meta.env.VITE_API_URL + "/" + product.upload_image}
+                                        src={import.meta.env.VITE_UPLOAD_URL + "/uploads" + product.upload_image}
                                         alt={product.product_name}
                                         className="max-h-64 object-contain rounded"
                                     />

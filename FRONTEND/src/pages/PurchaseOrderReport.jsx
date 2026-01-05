@@ -43,7 +43,7 @@ const PurchaseOrderReport = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -101,7 +101,7 @@ const PurchaseOrderReport = () => {
 
   const fetchPurchaseOrders = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/purchase-order`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-order`);
       const data = await response.json();
       setPurchaseOrders(data);
       setLoading(false);
@@ -277,7 +277,7 @@ const PurchaseOrderReport = () => {
     doc.setFillColor(253, 236, 236);
     doc.rect(0, 0, pageWidth, 40, "F");
 
-    doc.addImage(logoPng, "PNG", 15, 8, 55, 24);
+    doc.addImage(logoPng, "PNG", 15, 8, 60, 24);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -321,7 +321,7 @@ const PurchaseOrderReport = () => {
       new Date(order.date).toLocaleDateString(),
       order.due_date ? new Date(order.due_date).toLocaleDateString() : 'N/A',
       getOrderStatus(order),
-      `₹${order.total_amount?.toLocaleString() || '0'}`
+      `${order.total_amount?.toLocaleString() || '0'}`
     ]);
 
     // Add table using autoTable

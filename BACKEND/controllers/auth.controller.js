@@ -48,14 +48,6 @@ const login = async (req, res) => {
     if (role === "Engineer") {
       engineer = await engModel.findOne({ user_id: user._id });
     }
-    
-    // Set cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
 
     // Send response
     return res.status(200).json({
@@ -63,11 +55,11 @@ const login = async (req, res) => {
       token,
       user: userObj,
       role: role,
-      engineer, // null for non-engineers
+      engineer, 
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error"});
   }
 };
 
@@ -79,12 +71,10 @@ const forgotPassword = async (req, res) => {
     }
 
     const user = await userModel.findOne({ email });
-    // Always respond generically to avoid user enumeration
     if (!user) {
-      // Optionally, you could still send an email saying "no account" OR just return below:
       return res
-        .status(200)
-        .json({ message: "Password reset link sent to your email" });
+        .status(400)
+        .json({ message: "Email is not registered with this portal" });
     }
 
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_Token, {

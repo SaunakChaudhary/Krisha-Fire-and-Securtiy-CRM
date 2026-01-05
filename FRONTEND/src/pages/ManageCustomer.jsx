@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp, Upload, LucideUpload, Files } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from "../Context/AuthContext";
@@ -42,7 +42,7 @@ const CustomerSearch = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -94,7 +94,7 @@ const CustomerSearch = () => {
         setLoading(true);
         try {
             // Fetch customers
-            const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+            const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
             if (!customersResponse.ok) {
                 throw new Error('Failed to fetch customers');
             }
@@ -103,7 +103,7 @@ const CustomerSearch = () => {
             setFilteredCustomers(customersData);
 
             // Fetch companies
-            const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+            const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/company`);
 
             const companiesData = await companiesResponse.json();
             setCompanies(companiesData);
@@ -192,7 +192,7 @@ const CustomerSearch = () => {
 
                 // Send to backend
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/customers/import`,
+                    `${import.meta.env.VITE_API_URL}/customers/import`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -363,6 +363,13 @@ const CustomerSearch = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <div className="flex justify-end space-x-2">
+                                                            <Link
+                                                                to={`/customers/${customer._id}/documents`}
+                                                                className="text-blue-600 hover:text-blue-900 p-1"
+                                                                title="Cabinet"
+                                                            >
+                                                                <Files className="h-4 w-4" />
+                                                            </Link>
                                                             <Link
                                                                 to={`/customers/view/${customer._id}`}
                                                                 className="text-blue-600 hover:text-blue-900 p-1"

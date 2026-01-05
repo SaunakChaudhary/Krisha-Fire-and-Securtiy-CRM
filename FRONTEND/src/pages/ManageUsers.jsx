@@ -40,7 +40,7 @@ const ManageUsers = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -93,7 +93,7 @@ const ManageUsers = () => {
         setIsLoading(true);
         setFetchError(null);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/active`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/user/active`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -199,7 +199,7 @@ const ManageUsers = () => {
         try {
             let engineerData = {};
             if (user.accesstype.toLowerCase().includes('engineer')) {
-                const engineerResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/user/engineer/${user._id}`);
+                const engineerResponse = await fetch(`${import.meta.env.VITE_API_URL}/user/engineer/${user._id}`);
                 if (!engineerResponse.ok) {
                     throw new Error('Failed to fetch engineer data');
                 }
@@ -259,7 +259,7 @@ const ManageUsers = () => {
                 payload.engineerData = selectedUser.engineerData;
             }
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/${selectedUser._id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/user/${selectedUser._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -313,7 +313,7 @@ const ManageUsers = () => {
         }
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/${selectedUser._id}/password`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/user/${selectedUser._id}/password`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ newPassword: newPassword }),
@@ -474,7 +474,7 @@ const ManageUsers = () => {
 
                 // Send to backend
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/user/bulk-upload`,
+                    `${import.meta.env.VITE_API_URL}/user/bulk-upload`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

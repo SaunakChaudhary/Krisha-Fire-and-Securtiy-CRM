@@ -40,7 +40,7 @@ const SearchCompany = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -86,7 +86,7 @@ const SearchCompany = () => {
     const fetchCompanies = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/active`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/company/active`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }

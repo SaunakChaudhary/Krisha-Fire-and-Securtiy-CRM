@@ -42,7 +42,7 @@ const SalesEnquiryReport = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -100,7 +100,7 @@ const SalesEnquiryReport = () => {
 
   const fetchSalesEnquiries = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry`);
       const data = await response.json();
       setSalesEnquiries(data);
       console.log(data);
@@ -154,24 +154,27 @@ const SalesEnquiryReport = () => {
     const pageWidth = doc.internal.pageSize.width;
 
     // ===== Header =====
-    doc.setFillColor(253, 236, 236);
     doc.rect(0, 0, pageWidth, 40, "F");
 
-    doc.addImage(logoPng, "PNG", 15, 8, 55, 24);
+    doc.setFillColor(253, 236, 236); // #FDECEC
+    doc.rect(0, 0, 210, 40, 'F');
 
-    doc.setFont("helvetica", "bold");
+    // Logo
+    doc.addImage(logoPng, 'PNG', 15, 8, 60, 24);
+
+    // Company details (right aligned, brand red)
     doc.setFontSize(12);
-    doc.setTextColor(229, 9, 20);
-    doc.text("KRISHA FIRE AND SECURITY", pageWidth - 14, 15, { align: "right" });
+    doc.setTextColor(229, 9, 20); // #E50914
+    doc.setFont('helvetica', 'bold');
+    doc.text('KRISHA FIRE AND SECURITY', 200, 15, { align: 'right' });
 
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(90, 20, 20);
-    doc.text("Sun Gravitas, 1110, Char Rasta,", pageWidth - 14, 20, { align: "right" });
-    doc.text("near Jivraj Park Bridge, Rajmani Society,", pageWidth - 14, 25, { align: "right" });
-    doc.text("Satellite, Shyamal, Ahmedabad, Gujarat 380015", pageWidth - 14, 30, { align: "right" });
-    doc.text("Phone: 90999 26117", pageWidth - 14, 35, { align: "right" });
-
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(122, 12, 12); // dark maroon
+    doc.text('Sun Gravitas, 1110, Char Rasta,', 200, 20, { align: 'right' });
+    doc.text('near Jivraj Park Bridge, Rajmani Society,', 200, 25, { align: 'right' });
+    doc.text('Satellite, Shyamal, Ahmedabad, Gujarat 380015', 200, 30, { align: 'right' });
+    doc.text('Phone: 90999 26117', 200, 35, { align: 'right' });
     // Add generated date
     const now = new Date();
     doc.text(`Generated on: ${now.toLocaleDateString()} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} IST`, 14, 45);
@@ -292,11 +295,11 @@ const SalesEnquiryReport = () => {
     // Prepare table data
     const tableData = filteredEnquiries.map(enquiry => [
       enquiry.enquiry_code,
-      enquiry.company?.name || 'N/A',
-      enquiry.customer?.name || 'N/A',
+      enquiry.company?.company_name || 'N/A',
+      enquiry.customer?.customer_name || 'N/A',
       enquiry.status,
       new Date(enquiry.createdAt).toLocaleDateString(),
-      enquiry.expectedOrderValue ? `₹${enquiry.expectedOrderValue.toLocaleString()}` : 'N/A'
+      enquiry.expectedOrderValue ? `${enquiry.expectedOrderValue}` : 'N/A'
     ]);
 
     // Add table using autoTable

@@ -42,7 +42,7 @@ const DeliveryChallanReport = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -100,7 +100,7 @@ const DeliveryChallanReport = () => {
 
   const fetchDeliveryChallans = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans`);
       const data = await response.json();
       setDeliveryChallans(data);
       setLoading(false);
@@ -157,7 +157,7 @@ const DeliveryChallanReport = () => {
     doc.setFillColor(253, 236, 236);
     doc.rect(0, 0, pageWidth, 40, "F");
 
-    doc.addImage(logoPng, "PNG", 15, 8, 55, 24);
+    doc.addImage(logoPng, "PNG", 15, 8, 60, 24);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);

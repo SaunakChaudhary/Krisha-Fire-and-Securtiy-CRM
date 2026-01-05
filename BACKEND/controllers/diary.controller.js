@@ -4,28 +4,20 @@ const mongoose = require("mongoose");
 
 exports.getAllDiaryEntries = async (req, res) => {
   try {
-    // Get all diary entries with full population
-   const entries = await Diary.find({})
-  .populate({
-    path: "site",
-    populate: {
-      path: "site_systems",
-      populate: [
-        { path: "system_id" },
-        { path: "installed_by" }
-      ],
-    },
-  })
-  .populate({
-    path: "callLog",
-    populate: [
-      { path: "logged_by" },
-      { path: "call_type" }
-    ],
-  })
-  .populate("engineer")
-  .sort({ date: -1, startTime: 1 });
-
+    const entries = await Diary.find()
+      .populate({
+        path: "site",
+        populate: {
+          path: "site_systems",
+          populate: [{ path: "system_id" }, { path: "installed_by" }],
+        },
+      })
+      .populate({
+        path: "callLog",
+        populate: [{ path: "logged_by" }, { path: "call_type" }],
+      })
+      .populate("engineer")
+      .sort({ date: -1, startTime: 1 });
 
     res.status(200).json({
       success: true,
@@ -47,7 +39,6 @@ exports.createDiaryEntry = async (req, res) => {
     const { site, callLog, engineer, date, startTime, endTime, notes } =
       req.body;
 
-    // Accept either call ObjectId or call number
     let callDoc;
     if (mongoose.Types.ObjectId.isValid(callLog)) {
       callDoc = await Call.findById(callLog);
@@ -59,10 +50,13 @@ exports.createDiaryEntry = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Call log not found" });
     }
-
-    // Check if this is the first assignment for this call log
-    const existingAssignments = await Diary.find({ callLog: callDoc._id });
-    const initialEngineerId = req.query.initialEngineerId;
+    await Call.findOneAndUpdate(
+      { callLog: callDoc._id }, // Filter by callLog
+      {
+        assign_date: date,
+      },
+      { runValidators: true }
+    );
 
     const newEntry = new Diary({
       site,
@@ -71,7 +65,6 @@ exports.createDiaryEntry = async (req, res) => {
       date: new Date(date),
       startTime,
       endTime,
-      // duration will be calculated automatically in pre-validate hook
       notes,
     });
 
@@ -84,7 +77,7 @@ exports.createDiaryEntry = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       success: false,
-      message: "Error creating diary entry",
+      message: err.message,
       error: err.message,
     });
   }

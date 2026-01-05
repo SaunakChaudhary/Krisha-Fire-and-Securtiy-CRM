@@ -41,7 +41,7 @@ const ViewCalls = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -79,7 +79,7 @@ const ViewCalls = () => {
     const fetchCallData = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/calls/${id}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/calls/${id}`);
             if (!response.ok) throw new Error('Failed to fetch call details');
             const data = await response.json();
             setCall(data.data);
@@ -93,7 +93,7 @@ const ViewCalls = () => {
 
     const fetchTaskId = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/diary/entries`);
             const data = await res.json();
             const entry = data.data.find(entry => entry.callLog._id === id);
             if (entry) {
@@ -109,11 +109,10 @@ const ViewCalls = () => {
         if (!taskId) return;
         try {
             setTaskReportsLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${taskId}`);
             const data = await response.json();
             setTaskReports(data.data ? [data.data] : []);
-            setDocuments(data.data.documents)
-            console.log(data.data.documents)
+            setDocuments(data.data?.documents || []);
         } catch (error) {
             console.error('Error fetching task reports:', error);
             toast.error(error.message || 'Failed to load task reports');
@@ -174,7 +173,7 @@ const ViewCalls = () => {
     const handleDownload = async (documentId, fileName) => {
         try {
             // You'll need to create this API endpoint on your backend
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}/documents/${documentId}/download`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${taskId}/documents/${documentId}/download`);
 
             if (response.ok) {
                 const blob = await response.blob();
@@ -307,7 +306,7 @@ const ViewCalls = () => {
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                             }`}
                                     >
-                                        Documents ({documents.length})
+                                        Documents ({documents?.length})
                                     </button>
                                 </nav>
                             </div>
@@ -638,14 +637,14 @@ const ViewCalls = () => {
                                 <div className="p-6">
                                     <h3 className="flex items-center text-lg font-medium text-gray-800 mb-6">
                                         <File className="h-5 w-5 text-gray-500 mr-2" />
-                                        Documents ({documents.length})
+                                        Documents ({documents?.length})
                                     </h3>
 
                                     {documentsLoading ? (
                                         <div className="flex justify-center py-8">
                                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
                                         </div>
-                                    ) : documents.length > 0 ? (
+                                    ) : documents?.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {documents.map((doc) => (
                                                 <div key={doc._id} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">

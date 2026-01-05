@@ -1,17 +1,17 @@
-import { LogOut, User, Menu, X, ChevronLeft } from 'lucide-react'
+import { LogOut, User, Menu, X, ChevronLeft, CalendarRange } from 'lucide-react'
 import React, { useContext, useState } from 'react'
 import { AuthContext } from "../../Context/AuthContext";
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
 const EngineerNavbar = () => {
-    const { user,setUser } = useContext(AuthContext);
+    const { user, setUser } = useContext(AuthContext);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });
@@ -55,13 +55,16 @@ const EngineerNavbar = () => {
 
                 {/* Right Section - User Info and Actions */}
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="hidden sm:flex sm:items-center">
+                    <div onClick={()=> navigate("/engineer/calender")} className="cursor-pointer hover:bg-gray-100 p-2 rounded-md hidden sm:flex sm:items-center">
+                        <CalendarRange className="h-5 w-5 text-gray-600 mr-2" />
+                        <span className="text-gray-700 font-bold">Calender</span>
+                    </div>
+                    <div onClick={()=> navigate("/engineer/dashboard")} className="cursor-pointer hover:bg-gray-100 p-2 rounded-md hidden sm:flex sm:items-center">
                         <User className="h-5 w-5 text-gray-600 mr-2" />
-                        <span className="text-gray-700 font-medium">
+                        <span className="text-gray-700 font-bold">
                             {user.user.firstname} {user.user.lastname}
                         </span>
                     </div>
-
                     <button
                         onClick={handleLogout}
                         className="hidden sm:flex items-center bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition-colors"
@@ -93,13 +96,21 @@ const EngineerNavbar = () => {
                     </div>
 
                     <div className="p-4 border-b">
-                        <div className="flex items-center mb-4">
+                        <div className="cursor-pointer flex items-center mb-4" onClick={() => navigate("/engineer/dashboard")}>
                             <div className="bg-blue-100 p-2 rounded-full mr-3">
                                 <User className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                                 <p className="font-medium">{user.user.firstname} {user.user.lastname}</p>
                                 <p className="text-sm text-gray-500">Engineer</p>
+                            </div>
+                        </div>
+                        <div className="cursor-pointer flex items-center mb-4" onClick={()=> navigate("/engineer/calender")}>
+                            <div className="bg-blue-100 p-2 rounded-full mr-3">
+                                <CalendarRange className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-medium">Engineer Calender</p>
                             </div>
                         </div>
                     </div>

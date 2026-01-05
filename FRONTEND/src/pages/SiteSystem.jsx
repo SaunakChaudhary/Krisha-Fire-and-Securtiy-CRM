@@ -50,7 +50,7 @@ const SiteSystem = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -136,9 +136,9 @@ const SiteSystem = () => {
             try {
                 // Fetch site details
                 const [siteData, systemsData, techData] = await Promise.all([
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/systems`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites/${siteId}`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/systems`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/user`)
                 ]);
 
                 setSiteName(siteData.site_name);
@@ -251,7 +251,7 @@ const SiteSystem = () => {
             );
 
             await fetchWithErrorHandling(
-                `${import.meta.env.VITE_API_URL}/api/systems/${siteId}`,
+                `${import.meta.env.VITE_API_URL}/systems/${siteId}`,
                 {
                     method: 'POST',
                     body: JSON.stringify(cleanPayload)
@@ -262,8 +262,8 @@ const SiteSystem = () => {
 
             // Refresh data
             const [siteData, systemsData] = await Promise.all([
-                fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`),
-                fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/systems`)
+                fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites/${siteId}`),
+                fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/systems`)
             ]);
 
             setSystems(siteData.site_systems || []);
@@ -302,7 +302,7 @@ const SiteSystem = () => {
         if (window.confirm('Are you sure you want to remove this system from the site?')) {
             try {
                 await fetchWithErrorHandling(
-                    `${import.meta.env.VITE_API_URL}/api/systems/${siteId}/${systemId}`,
+                    `${import.meta.env.VITE_API_URL}/systems/${siteId}/${systemId}`,
                     { method: 'DELETE' }
                 );
 
@@ -310,8 +310,8 @@ const SiteSystem = () => {
 
                 // Refresh data
                 const [siteData, systemsData] = await Promise.all([
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/systems`)
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites/${siteId}`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/systems`)
                 ]);
 
                 setSystems(siteData.site_systems || []);

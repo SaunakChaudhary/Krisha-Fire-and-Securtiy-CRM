@@ -42,7 +42,7 @@ const SearchSupplier = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -108,7 +108,7 @@ const SearchSupplier = () => {
             queryString.append('limit', searchParams.limit);
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/supplier/?${queryString}`,
+                `${import.meta.env.VITE_API_URL}/supplier/?${queryString}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -240,7 +240,7 @@ const SearchSupplier = () => {
 
                 // ✅ send formattedData, not parsedData
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/supplier/import`,
+                    `${import.meta.env.VITE_API_URL}/supplier/import`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

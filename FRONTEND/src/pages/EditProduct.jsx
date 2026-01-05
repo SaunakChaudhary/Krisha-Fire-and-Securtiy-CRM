@@ -41,7 +41,7 @@ const EditProduct = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -128,7 +128,7 @@ const EditProduct = () => {
             try {
                 // Fetch product data
                 const productResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/products/${id}`
+                    `${import.meta.env.VITE_API_URL}/products/${id}`
                 );
                 const productData = await productResponse.json();
 
@@ -149,21 +149,21 @@ const EditProduct = () => {
 
                 // Fetch manufacturers
                 const manuResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/reference-codes/category/ManufacturerCode`
+                    `${import.meta.env.VITE_API_URL}/reference-codes/category/ManufacturerCode`
                 );
                 const manuData = await manuResponse.json();
                 setManufacturers(manuData || []);
 
                 // Fetch product groups
                 const pgResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/reference-codes/category/productGroup`
+                    `${import.meta.env.VITE_API_URL}/reference-codes/category/productGroup`
                 );
                 const pgData = await pgResponse.json();
                 setProductGroups(pgData || []);
 
                 // Fetch suppliers
                 const supplierResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/supplier`
+                    `${import.meta.env.VITE_API_URL}/supplier`
                 );
                 const supplierData = await supplierResponse.json();
                 setSuppliers(supplierData.data || []);
@@ -241,7 +241,7 @@ const EditProduct = () => {
 
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`, {
                 method: 'PUT',
                 body: formDataToSend,
             });

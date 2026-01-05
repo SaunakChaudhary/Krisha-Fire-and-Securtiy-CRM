@@ -41,7 +41,7 @@ const PurchaseOrderManage = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -92,7 +92,7 @@ const PurchaseOrderManage = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/purchase-order`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/purchase-order`);
         if (!res.ok) throw new Error('Failed to fetch purchase orders');
         const data = await res.json();
         setPurchaseOrders(data);

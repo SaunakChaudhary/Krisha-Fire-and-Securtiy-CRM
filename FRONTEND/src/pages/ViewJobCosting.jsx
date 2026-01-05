@@ -40,7 +40,7 @@ const ViewJobCosting = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -84,7 +84,7 @@ const ViewJobCosting = () => {
     useEffect(() => {
         const fetchJobCosting = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job-costing/${id}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/job-costing/${id}`, {
                 });
                 if (!response.ok) throw new Error('Failed to fetch job costing');
                 const data = await response.json();

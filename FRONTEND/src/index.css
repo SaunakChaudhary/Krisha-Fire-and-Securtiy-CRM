@@ -60,3 +60,41 @@
 .transition {
     transition: all 0.2s ease-in-out;
 }
+
+.fc {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.fc-daygrid-day-number {
+  font-size: 0.75rem;
+  color: #6b7280; /* gray-500 */
+}
+
+.fc-daygrid-event {
+  border: none !important;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.fc-daygrid-event:hover {
+  cursor: pointer;
+}
+.fc-day-today {
+  background: #eff6ff !important; /* blue-50 */
+}
+.fc-scrollgrid {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #e5e7eb; /* gray-200 */
+}

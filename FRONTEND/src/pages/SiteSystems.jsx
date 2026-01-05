@@ -41,7 +41,7 @@ const SiteSystems = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -124,8 +124,8 @@ const SiteSystems = () => {
         const fetchData = async () => {
             try {
                 const [siteData, techData] = await Promise.all([
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites/${siteId}`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/user`)
                 ]);
 
                 // Find the specific system in site_systems
@@ -233,7 +233,7 @@ const SiteSystems = () => {
             );
 
             await fetchWithErrorHandling(
-                `${import.meta.env.VITE_API_URL}/api/systems/${siteId}/systems/${systemId}`,
+                `${import.meta.env.VITE_API_URL}/systems/${siteId}/systems/${systemId}`,
                 {
                     method: 'PUT',
                     body: JSON.stringify(cleanPayload)
@@ -253,7 +253,7 @@ const SiteSystems = () => {
         if (window.confirm('Are you sure you want to remove this system from the site?')) {
             try {
                 await fetchWithErrorHandling(
-                    `${import.meta.env.VITE_API_URL}/api/systems/${siteId}/systems/${systemId}`,
+                    `${import.meta.env.VITE_API_URL}/systems/${siteId}/systems/${systemId}`,
                     { method: 'DELETE' }
                 );
 
@@ -293,13 +293,6 @@ const SiteSystems = () => {
                         {/* Header Section */}
                         <div className="mb-6 flex justify-between items-center">
                             <div>
-                                <button
-                                    onClick={() => navigate(`/site/${siteId}/system`)}
-                                    className="flex items-center text-blue-600 hover:text-blue-800 mb-2"
-                                >
-                                    <ArrowLeft size={18} className="mr-1" />
-                                    Back to Systems
-                                </button>
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
                                     Edit {systemData.system_id.systemName} System
                                 </h1>
@@ -523,7 +516,7 @@ const SiteSystems = () => {
                                 <div className="flex justify-end space-x-4 pt-4">
                                     <button
                                         type="button"
-                                        onClick={() => navigate(`/site/${siteId}/system`)}
+                                        onClick={() => navigate(`/site/${siteId}/system?status=Live`)}
                                         className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                                     >
                                         Cancel

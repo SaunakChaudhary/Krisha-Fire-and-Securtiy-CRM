@@ -40,7 +40,7 @@ const AddUser = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -114,7 +114,7 @@ const AddUser = () => {
     const fetchAccessTypes = async () => {
       try {
         setLoadingAccessTypes(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types/`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/access-types/`);
         if (!response.ok) throw new Error('Failed to fetch access types');
         const data = await response.json();
         setAccessTypes(data.filter(dt => dt.status === "active"));
@@ -130,7 +130,7 @@ const AddUser = () => {
       if (!userid) return;
       try {
         setLoadingUser(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/${userid}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/user/${userid}`);
         if (!response.ok) throw new Error('Failed to fetch user data');
         const data = await response.json();
         setFormData({
@@ -144,7 +144,7 @@ const AddUser = () => {
           isEngineer: !!data.isEngineer,
         });
         if (data.isEngineer) {
-          const engineerResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/engineer/user/${userid}`);
+          const engineerResponse = await fetch(`${import.meta.env.VITE_API_URL}/engineer/user/${userid}`);
           if (engineerResponse.ok) {
             const engineer = await engineerResponse.json();
             setEngineerData({
@@ -232,8 +232,8 @@ const AddUser = () => {
         ...(formData.isEngineer && { engineerData }),
       };
       const url = isEditMode
-        ? `${import.meta.env.VITE_API_URL}/api/user/${userid}`
-        : `${import.meta.env.VITE_API_URL}/api/user/`;
+        ? `${import.meta.env.VITE_API_URL}/user/${userid}`
+        : `${import.meta.env.VITE_API_URL}/user/`;
       const method = isEditMode ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -276,7 +276,7 @@ const AddUser = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user/${userid}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/${userid}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });

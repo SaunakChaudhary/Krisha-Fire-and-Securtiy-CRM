@@ -502,8 +502,10 @@ const bulkUploadUsers = async (req, res) => {
     for (let i = 0; i < usersData.length; i++) {
       const data = usersData[i];
 
-      const access_type = await AccessType.findOne({ name: data.accesstype_id });
-      
+      const access_type = await AccessType.findOne({
+        name: data.accesstype_id,
+      });
+
       try {
         // Create User
         const user = new User({
@@ -511,10 +513,11 @@ const bulkUploadUsers = async (req, res) => {
           lastname: data.lastname,
           email: data.email,
           username: data.username,
-          password: data.password,
+          password: await bcrypt.hash(data.password, salt),
           accesstype_id: access_type._id,
           status: data.status,
         });
+        
         const savedUser = await user.save();
 
         // If engineer fields exist, create Engineer
@@ -548,6 +551,13 @@ const bulkUploadUsers = async (req, res) => {
     }
 
     if (errors.length > 0) {
+      console.log({
+        message: "Partial success",
+        inserted: createdUsers.length,
+        failed: errors.length,
+        errors,
+      });
+
       return res.status(207).json({
         message: "Partial success",
         inserted: createdUsers.length,
@@ -560,6 +570,7 @@ const bulkUploadUsers = async (req, res) => {
       message: "All users uploaded successfully",
       count: createdUsers.length,
     });
+    console.log("Bulk upload successful:", { count: createdUsers.length });
   } catch (error) {
     console.error("Bulk upload error:", error);
     res.status(500).json({ message: "Server error", error: error.message });

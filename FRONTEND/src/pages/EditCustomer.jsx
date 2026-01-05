@@ -41,7 +41,7 @@ const EditCustomer = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -137,7 +137,7 @@ const EditCustomer = () => {
     const [leads, setLeads] = useState([]);
     useEffect(() => {
         const fetchLead = async () => {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/sourceLead`)
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/category/sourceLead`)
             const data = await response.json();
             if (response.ok) {
                 setLeads(data)
@@ -153,13 +153,13 @@ const EditCustomer = () => {
         setCountries(countries);
 
         // Fetch companies
-        fetch(`${import.meta.env.VITE_API_URL}/api/company`)
+        fetch(`${import.meta.env.VITE_API_URL}/company`)
             .then(response => response.json())
             .then(data => setCompanies(data))
             .catch(error => console.error('Error fetching companies:', error));
 
         // Fetch customer data
-        fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}`)
+        fetch(`${import.meta.env.VITE_API_URL}/customers/${id}`)
             .then(response => response.json())
             .then(data => {
                 if (data) {
@@ -273,7 +273,7 @@ const EditCustomer = () => {
                 company_id: formData.company_id || undefined
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/customers/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -299,7 +299,7 @@ const EditCustomer = () => {
 
     const handleClear = () => {
         // Reset to original values
-        fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}`)
+        fetch(`${import.meta.env.VITE_API_URL}/customers/${id}`)
             .then(response => response.json())
             .then(data => {
                 if (data) {
@@ -785,11 +785,10 @@ const EditCustomer = () => {
                                                 required={formData.status === 'customer'}
                                             >
                                                 <option value="">Select Method</option>
-                                                <option>Cash</option>
-                                                <option>Cheque</option>
-                                                <option>Bank Transfer</option>
-                                                <option>Credit Card</option>
-                                                <option>Online Payment</option>
+                                                <option>Invoice</option>
+                                                <option>Direct Debit</option>
+                                                <option>Standing Order</option>
+                                                <option>Unknown</option>
                                             </select>
                                         </div>
                                         <div>

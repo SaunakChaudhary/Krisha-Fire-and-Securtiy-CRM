@@ -41,7 +41,7 @@ const AddCustomer = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -139,7 +139,7 @@ const AddCustomer = () => {
         const countries = Country.getAllCountries();
         setCountries(countries);
 
-        fetch(`${import.meta.env.VITE_API_URL}/api/company`)
+        fetch(`${import.meta.env.VITE_API_URL}/company`)
             .then(response => response.json())
             .then(data => setCompanies(data))
             .catch(error => console.error('Error fetching companies:', error));
@@ -148,7 +148,7 @@ const AddCustomer = () => {
 
     useEffect(() => {
         const fetchLead = async () => {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/sourceLead`)
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/category/sourceLead`)
             const data = await response.json();
             if (response.ok) {
                 setLeads(data)
@@ -235,7 +235,7 @@ const AddCustomer = () => {
                 company_id: formData.company_id || undefined
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/customers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

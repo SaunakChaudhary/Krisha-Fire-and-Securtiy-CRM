@@ -24,11 +24,14 @@ import {
   CheckCircle,
   CheckCircle2,
   Truck,
+  TruckIcon,
+  CalendarClockIcon,
+  Wrench,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../Context/AuthContext";
-import {toast} from "react-hot-toast"
+import { toast } from "react-hot-toast"
 
 
 const AssignmentModal = ({
@@ -61,6 +64,8 @@ const AssignmentModal = ({
 
     return true;
   };
+
+  console.log(currentAssignment)
   return (
     <div className="fixed inset-0 bg-gray-600/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -115,7 +120,7 @@ const AssignmentModal = ({
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  value={siteName || ''}
+                  value={siteName || currentAssignment.site.site_code + " - " + currentAssignment.site.site_name || ''}
                   className="pl-10 w-full rounded-md border-gray-300 shadow-sm py-2 bg-gray-100"
                   readOnly
                 />
@@ -124,12 +129,16 @@ const AssignmentModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Call Number</label>
-              <input
-                type="text"
-                value={call_no || ''}
-                className="w-full rounded-md border-gray-300 shadow-sm py-2 bg-gray-100"
-                readOnly
-              />
+              <div className="relative">
+                <Wrench className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+
+                <input
+                  type="text"
+                  value={call_no || "#" + currentAssignment.callLog?.call_number || ''}
+                  className="w-full pl-10 rounded-md border-gray-300 shadow-sm py-2 bg-gray-100"
+                  readOnly
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -325,13 +334,12 @@ const Diary = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
         setPermissionsLoaded(true);
       } else {
-        console.error("Failed to fetch permissions");
         setPermissionsLoaded(true);
       }
     } catch (error) {
@@ -363,11 +371,23 @@ const Diary = () => {
   // URL parameters
   const { engineer_id, call_no } = useParams();
   const [searchParams] = useSearchParams();
-  const site = searchParams.get("site");
+  const site = searchParams.get("site") || "";
+  const date = searchParams.get("date") || "";
+
 
   // State management
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+
+
+  useEffect(() => {
+    if (!date) return;
+
+    const parsedDate = parseISO(date);
+    if (!isNaN(parsedDate.getTime())) {
+      setCurrentDate(parsedDate);
+    }
+  }, [date]);
   const [timeSlots] = useState(Array.from({ length: 24 }, (_, i) => `${i}:00`));
   const [engineers, setEngineers] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -390,7 +410,7 @@ const Diary = () => {
 
   const fetchEngineers = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user`);
       if (!response.ok) {
         throw new Error('Failed to fetch engineers');
       }
@@ -407,7 +427,7 @@ const Diary = () => {
 
   const fetchSiteDetails = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${site}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/${site}`);
       if (!response.ok) {
         throw new Error('Failed to fetch site data');
       }
@@ -422,14 +442,13 @@ const Diary = () => {
   const fetchDiaryEntries = async () => {
     try {
       const dateStr = format(currentDate, 'yyyy-MM-dd');
-      let url = `${import.meta.env.VITE_API_URL}/api/diary/entries?date=${dateStr}`;
+      let url = `${import.meta.env.VITE_API_URL}/diary/entries?date=${dateStr}`;
 
       const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Failed to fetch diary entries');
       }
-
       const data = await response.json();
       setAssignments(data.data || []);
 
@@ -448,7 +467,7 @@ const Diary = () => {
 
   const checkTimeConflict = async (engineerId, date, startTime, endTime, excludeId = null) => {
     try {
-      let url = `${import.meta.env.VITE_API_URL}/api/diary/check-conflict?engineer=${engineerId}&date=${date}&startTime=${startTime}&endTime=${endTime}`;
+      let url = `${import.meta.env.VITE_API_URL}/diary/check-conflict?engineer=${engineerId}&date=${date}&startTime=${startTime}&endTime=${endTime}`;
       if (excludeId) {
         url += `&excludeId=${excludeId}`;
       }
@@ -469,7 +488,7 @@ const Diary = () => {
   const fetchCallLogAssignments = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/diary/call-log/${call_no}/assignments`
+        `${import.meta.env.VITE_API_URL}/diary/call-log/${call_no}/assignments`
       );
 
       if (!response.ok) {
@@ -534,9 +553,9 @@ const Diary = () => {
   };
 
   const handleDateChange = (newDate) => {
-    if(newDate == "Invalid Date"){
+    if (newDate == "Invalid Date") {
       toast.error("Invalid Date")
-      return ;
+      return;
     }
     setCurrentDate(newDate);
   };
@@ -545,7 +564,7 @@ const Diary = () => {
   const handleNextDay = () => handleDateChange(addDays(currentDate, 1));
   const handleToday = () => handleDateChange(new Date());
 
-  const handleSlotClick = async (engineerId, timeSlot) => {
+  const handleSlotClick = async (engineerId, timeSlot, siteName) => {
     // Check if this slot is already assigned
     const existingAssignment = assignments.find(a => {
       if (a.engineer._id !== engineerId) return false;
@@ -560,7 +579,7 @@ const Diary = () => {
       setCurrentAssignment({
         ...existingAssignment,
         engineerId: existingAssignment.engineer._id,
-        siteId: existingAssignment.site?._id || site,
+        siteId: existingAssignment.site?._id || siteName,
         call_no: existingAssignment.callLog?.call_number || call_no
       });
       setIsModalOpen(true);
@@ -584,7 +603,7 @@ const Diary = () => {
     const defaultEndTime = startHour === 23 ? "23:59" : `${startHour + 1}:00`;
     setCurrentAssignment({
       engineerId,
-      siteId: site,
+      siteId: site ? site : siteName,
       call_no,
       date: format(currentDate, "yyyy-MM-dd"),
       startTime: timeSlot,
@@ -628,7 +647,7 @@ const Diary = () => {
       let response, data;
 
       if (assignment._id) {
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${assignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/diary/entries/${assignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -649,7 +668,7 @@ const Diary = () => {
           return;
         }
 
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${user?._id}`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/diary/entries/${user?._id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -686,7 +705,6 @@ const Diary = () => {
       );
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error saving assignment:", error.message);
       showNotification(error.message || "Error saving assignment", "error");
     } finally {
       setIsLoading(false);
@@ -701,7 +719,7 @@ const Diary = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries/${currentAssignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/diary/entries/${currentAssignment._id}${hasRequiredParams ? `?initialEngineerId=${engineer_id}` : ''}`, {
         method: 'DELETE'
       });
 
@@ -724,23 +742,10 @@ const Diary = () => {
       setIsDeleteModalOpen(false);
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error deleting assignment:", error);
       showNotification(error.message || 'Error deleting assignment', 'error');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getAssignmentForSlot = (engineerId, timeSlot) => {
-    const slotMin = toMinutes(timeSlot);
-    const currentDateStr = format(currentDate, 'yyyy-MM-dd');
-
-    return assignments.find(a =>
-      a.engineer._id === engineerId &&
-      format(new Date(a.date), 'yyyy-MM-dd') === currentDateStr &&
-      slotMin >= toMinutes(a.startTime) &&
-      slotMin < toMinutes(a.endTime)
-    );
   };
 
   const getDateDisplay = () => {
@@ -766,6 +771,10 @@ const Diary = () => {
                 Diary Management
               </h1>
               <div className="flex items-center space-x-4 mt-2 md:mt-0">
+                <div className="flex cursor-pointer items-center" onClick={() => navigate("/diary-calendar")}>
+                  <CalendarClockIcon className="h-6 w-6 text-gray-600" />
+                  <span className="font-bold ml-2">Calender View</span>
+                </div>
                 <div className="text-lg font-medium text-gray-700">
                   {getDateDisplay()}
                 </div>
@@ -915,11 +924,10 @@ const Diary = () => {
                                 const assignment = engineerAssignments.find(
                                   (a) => a.startTime === timeSlot
                                 );
+
                                 if (assignment) {
-                                  const slotMin = toMinutes(timeSlot);
                                   const startMin = toMinutes(assignment.startTime);
                                   const endMin = toMinutes(assignment.endTime);
-
                                   const colSpan = (endMin - startMin) / slotInterval; // e.g. 30 min interval
 
                                   return (
@@ -927,7 +935,7 @@ const Diary = () => {
                                       key={`${engineer._id}-${timeSlot}`}
                                       colSpan={colSpan}
                                       className="relative px-4 py-5 text-sm text-center bg-blue-50 cursor-pointer rounded-lg shadow-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                      onClick={() => handleSlotClick(engineer._id, timeSlot)}
+                                      onClick={() => handleSlotClick(engineer._id, timeSlot, site.site_code + site.site_name)}
                                     >
                                       <div className="flex flex-col items-center justify-center">
                                         <div className="flex items-center space-x-2 justify-center">
@@ -975,7 +983,7 @@ const Diary = () => {
                                 return (
                                   <td
                                     key={`${engineer._id}-${timeSlot}`}
-                                    onClick={() => handleSlotClick(engineer._id, timeSlot)}
+                                    onClick={() => handleSlotClick(engineer._id, timeSlot, site.site_code + site.site_name)}
                                     className="relative px-3 py-4 text-sm cursor-pointer hover:bg-gray-50"
                                   />
                                 );

@@ -39,7 +39,7 @@ const ManageJobCosting = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -85,7 +85,7 @@ const ManageJobCosting = () => {
     useEffect(() => {
         const fetchJobCostings = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job-costing`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/job-costing`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -109,7 +109,7 @@ const ManageJobCosting = () => {
         if (!window.confirm('Are you sure you want to delete this job costing?')) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job-costing/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/job-costing/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`

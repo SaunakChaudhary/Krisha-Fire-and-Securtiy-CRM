@@ -18,14 +18,12 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
-
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: "include",
                 body: JSON.stringify({
                     username,
                     password
@@ -52,12 +50,14 @@ const Login = () => {
                     engineerData: data.engineer || null,
                 });
                 navigate('/engineer/dashboard');
+                localStorage.setItem("token", data.token);
             } else {
+                localStorage.setItem("token", data.token);
                 return navigate('/dashboard');
             }
 
         } catch (err) {
-            console.error('Login error:', err);
+            console.error(err);
             setError(err.message || 'An error occurred during login');
         } finally {
             setIsLoading(false);
@@ -70,7 +70,7 @@ const Login = () => {
         setError('');
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,14 +80,14 @@ const Login = () => {
 
             const data = await response.json();
 
-            if (!response.ok) {
+            if (response.ok) {
+                console.log(data)
+                alert('Password reset link has been sent to your email');
+                setShowForgot(false);
+            }else{
                 throw new Error(data.message || 'Password reset request failed');
             }
-
-            // Success handling
-            console.log('Reset link sent:', data);
-            alert('Password reset link has been sent to your email');
-            setShowForgot(false);
+            
 
         } catch (err) {
             console.error('Forgot password error:', err);

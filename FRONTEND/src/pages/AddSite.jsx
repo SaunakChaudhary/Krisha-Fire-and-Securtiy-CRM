@@ -42,7 +42,7 @@ const AddSite = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -164,7 +164,7 @@ const AddSite = () => {
     const fetchCustomers = async () => {
       setLoadingCustomers(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
         if (!response.ok) throw new Error('Failed to fetch customers');
         const data = await response.json();
         setCustomers(data);
@@ -182,7 +182,7 @@ const AddSite = () => {
   useEffect(() => {
     const fetchAndSetCustomerDetails = async (id) => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/customers/${id}`);
         if (!response.ok) throw new Error('Failed to fetch customer details');
         const customer = await response.json();
 
@@ -371,7 +371,7 @@ const AddSite = () => {
         distance: formData.distance ? Number(formData.distance) : undefined
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

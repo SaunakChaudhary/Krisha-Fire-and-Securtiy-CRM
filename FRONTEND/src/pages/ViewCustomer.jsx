@@ -41,7 +41,7 @@ const ViewCustomer = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -94,13 +94,13 @@ const ViewCustomer = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const customerResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}`);
+                const customerResponse = await fetch(`${import.meta.env.VITE_API_URL}/customers/${id}`);
                 const customerData = await customerResponse.json();
 
                 setCustomer(customerData);
 
                 setSitesLoading(true);
-                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`);
+                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/sites`);
                 const sitesData = await sitesResponse.json();
                 setSites(sitesData.filter(site => site.customer_id._id === id));
             } catch (error) {

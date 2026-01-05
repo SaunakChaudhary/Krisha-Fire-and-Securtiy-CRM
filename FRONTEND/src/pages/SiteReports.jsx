@@ -42,7 +42,7 @@ const SiteReports = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -98,7 +98,7 @@ const SiteReports = () => {
         const fetchSites = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/sites`);
                 if (!response.ok) throw new Error('Failed to fetch sites');
                 const data = await response.json();
                 setSites(data);

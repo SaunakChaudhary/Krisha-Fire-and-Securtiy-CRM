@@ -44,7 +44,7 @@ const EditPurchaseOrder = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -134,11 +134,11 @@ const EditPurchaseOrder = () => {
       try {
         // Fetch form dropdown data
         const [companiesRes, suppliersRes, customersRes, productsRes, callsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL}/api/company`),
-          fetch(`${import.meta.env.VITE_API_URL}/api/supplier`),
-          fetch(`${import.meta.env.VITE_API_URL}/api/customers`),
-          fetch(`${import.meta.env.VITE_API_URL}/api/products`),
-          fetch(`${import.meta.env.VITE_API_URL}/api/calls`)
+          fetch(`${import.meta.env.VITE_API_URL}/company`),
+          fetch(`${import.meta.env.VITE_API_URL}/supplier`),
+          fetch(`${import.meta.env.VITE_API_URL}/customers`),
+          fetch(`${import.meta.env.VITE_API_URL}/products`),
+          fetch(`${import.meta.env.VITE_API_URL}/calls`)
         ]);
         setCompanies(await companiesRes.json());
         setSuppliers((await suppliersRes.json()).data.filter(sup => sup.status === "Active"));
@@ -147,7 +147,7 @@ const EditPurchaseOrder = () => {
         setCalls((await callsRes.json()).data);
 
         // Fetch existing PO data
-        const poRes = await fetch(`${import.meta.env.VITE_API_URL}/api/purchase-order/${id}`);
+        const poRes = await fetch(`${import.meta.env.VITE_API_URL}/purchase-order/${id}`);
         const poData = await poRes.json();
         setFetchedData(poData);
         if (!poRes.ok) throw new Error(poData.message || "Failed to fetch purchase order");
@@ -318,7 +318,7 @@ const EditPurchaseOrder = () => {
     }
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/purchase-order/${id}`,
+        `${import.meta.env.VITE_API_URL}/purchase-order/${id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

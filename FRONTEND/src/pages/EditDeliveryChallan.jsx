@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from "../Context/AuthContext";
-const EditDeliveryChallan = () => {    
+const EditDeliveryChallan = () => {
     const { user } = useContext(AuthContext);
-
+    
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -37,7 +37,7 @@ const EditDeliveryChallan = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -94,7 +94,7 @@ const EditDeliveryChallan = () => {
         delivery_date: new Date().toISOString().split('T')[0],
         po_date: '',
         reference_po_no: '',
-        issued_by: user.user._id,
+        issued_by: user?.user?._id ? user.user._id : user._id,
         remarks: '',
         is_invoiced: false,
         products: []
@@ -107,37 +107,37 @@ const EditDeliveryChallan = () => {
                 setLoading(true);
 
                 // Fetch companies  
-                const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+                const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/company`);
                 if (!companiesResponse.ok) throw new Error('Failed to fetch companies');
                 const companiesData = await companiesResponse.json();
                 setCompanies(companiesData);
 
                 // Fetch customers
-                const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+                const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
                 if (!customersResponse.ok) throw new Error('Failed to fetch customers');
                 const customersData = await customersResponse.json();
                 setCustomers(customersData);
 
                 // Fetch sites
-                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`);
+                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/sites`);
                 if (!sitesResponse.ok) throw new Error('Failed to fetch sites');
                 const sitesData = await sitesResponse.json();
                 setSites(sitesData);
 
                 // Fetch calls
-                const callsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`);
+                const callsResponse = await fetch(`${import.meta.env.VITE_API_URL}/calls`);
                 if (!callsResponse.ok) throw new Error('Failed to fetch calls');
                 const callsData = await callsResponse.json();
                 setCalls(callsData.data || callsData);
 
                 // Fetch products
-                const productsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+                const productsResponse = await fetch(`${import.meta.env.VITE_API_URL}/products`);
                 if (!productsResponse.ok) throw new Error('Failed to fetch products');
                 const productsData = await productsResponse.json();
                 setProducts(productsData.data || productsData);
 
                 // Fetch the specific delivery challan
-                const challanResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans/${id}`);
+                const challanResponse = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans/${id}`);
                 if (!challanResponse.ok) throw new Error('Failed to fetch delivery challan');
                 const challanData = await challanResponse.json();
 
@@ -156,7 +156,7 @@ const EditDeliveryChallan = () => {
                     delivery_date: deliveryDate.toISOString().split('T')[0],
                     po_date: poDate ? poDate.toISOString().split('T')[0] : '',
                     reference_po_no: challanData.reference_po_no || '',
-                    issued_by: challanData.issued_by?._id || challanData.issued_by || user.user._id,
+                    issued_by: challanData.issued_by?._id || challanData.issued_by || (user?.user?._id ? user.user._id : user._id),
                     remarks: challanData.remarks || '',
                     is_invoiced: challanData.is_invoiced || false,
                     products: challanData.products.map(p => ({
@@ -174,7 +174,7 @@ const EditDeliveryChallan = () => {
         };
 
         fetchData();
-    }, [id, user.user._id]);
+    }, [id, user?.user?._id]);
 
     // Filter customers based on selected company
     const filteredCustomers = formData.company
@@ -269,7 +269,7 @@ const EditDeliveryChallan = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -499,16 +499,18 @@ const EditDeliveryChallan = () => {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Issued By</label>
-                                    <input
-                                        type="text"
-                                        name="issued_by"
-                                        value={user.user.firstname + " " + user.user.lastname}
-                                        readOnly
-                                        className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    name="issued_by"
+                                    value={
+                                        user?.user?.firstname
+                                            ? `${user?.user?.firstname} ${user?.user?.lastname ?? ""}`
+                                            : `${user?.firstname ?? ""} ${user?.lastname ?? ""}`
+                                    }
+                                    readOnly
+                                    className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg"
+                                />
+
 
                                 <div className="flex items-center">
                                     <input

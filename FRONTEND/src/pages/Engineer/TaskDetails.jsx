@@ -71,7 +71,7 @@ const TaskDetails = () => {
     try {
       setHistoryLoading(true);
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/calls`
+        `${import.meta.env.VITE_API_URL}/calls`
       );
 
       const data = await res.json();
@@ -97,7 +97,7 @@ const TaskDetails = () => {
   const fetchDocuments = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}/documents`
+        `${import.meta.env.VITE_API_URL}/taskReport/${taskId}/documents`
       );
       const data = await res.json();
       if (res.ok) {
@@ -128,7 +128,7 @@ const TaskDetails = () => {
       });
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}/documents`,
+        `${import.meta.env.VITE_API_URL}/taskReport/${taskId}/documents`,
         {
           method: "POST",
           body: formData,
@@ -157,7 +157,7 @@ const TaskDetails = () => {
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL
-        }/api/taskReport/${taskId}/documents/${documentId}/download`
+        }/taskReport/${taskId}/documents/${documentId}/download`
       );
 
       if (response.ok) {
@@ -187,7 +187,7 @@ const TaskDetails = () => {
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL
-        }/api/taskReport/${taskId}/documents/${documentId}`,
+        }/taskReport/${taskId}/documents/${documentId}`,
         {
           method: "DELETE",
         }
@@ -275,7 +275,7 @@ const TaskDetails = () => {
 
       // Use PUT method for update if report exists, POST for create
       const method = taskReport ? 'PUT' : 'POST';
-      const link = taskReport ? `${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}` : `${import.meta.env.VITE_API_URL}/api/taskReport`;
+      const link = taskReport ? `${import.meta.env.VITE_API_URL}/taskReport/${taskId}` : `${import.meta.env.VITE_API_URL}/taskReport`;
       const response = await fetch(link, {
         method: method,
         headers: {
@@ -350,7 +350,7 @@ const TaskDetails = () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/diary/entries`
+          `${import.meta.env.VITE_API_URL}/diary/entries`
         );
 
         const data = await res.json();
@@ -384,7 +384,7 @@ const TaskDetails = () => {
       try {
         setReportLoading(true);
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/taskReport/${taskId}`
+          `${import.meta.env.VITE_API_URL}/taskReport/${taskId}`
         );
 
         const data = await res.json();

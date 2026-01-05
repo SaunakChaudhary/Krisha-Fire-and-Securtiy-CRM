@@ -16,9 +16,8 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
 
     const handleLogout = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
                 method: "POST",
-                credentials: "include",
             });
 
             if (res.ok) {
@@ -62,7 +61,7 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -219,7 +218,7 @@ const Sidebar = ({ isOpen, toggleSidebar, open }) => {
                         )}
 
                         {hasPermission("Manage Diary") && (
-                            <SidebarItem icon={<NotebookIcon size={18} />} label="Diary" link="/manage-diary" />
+                            <SidebarItem icon={<NotebookIcon size={18} />} label="Diary" link="/diary-calendar" />
                         )}
 
                         {hasPermission("Manage Supplier") && (

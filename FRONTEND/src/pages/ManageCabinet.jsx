@@ -38,7 +38,7 @@ const ManageCabinet = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -100,7 +100,7 @@ const ManageCabinet = () => {
 
             if (currentFolder) {
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/cabinet/folder/${currentFolder._id}?search=${searchQuery}`
+                    `${import.meta.env.VITE_API_URL}/cabinet/folder/${currentFolder._id}?search=${searchQuery}`
                 );
                 if (!response.ok) throw new Error('Failed to fetch folder contents');
 
@@ -110,7 +110,7 @@ const ManageCabinet = () => {
             } else {
                 // Fetch root items
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/cabinet?search=${searchQuery}`
+                    `${import.meta.env.VITE_API_URL}/cabinet?search=${searchQuery}`
                 );
                 if (!response.ok) throw new Error('Failed to fetch root items');
 
@@ -139,7 +139,7 @@ const ManageCabinet = () => {
             }
 
             // For other files, we need to fetch the content
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/file/${file._id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/file/${file._id}`, {
                 method: 'GET',
             });
 
@@ -175,7 +175,7 @@ const ManageCabinet = () => {
     const downloadFile = async (file) => {
         try {
             setError('');
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/file/${file._id}/download`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/file/${file._id}/download`);
 
             if (!response.ok) throw new Error('Failed to download file');
 
@@ -208,7 +208,7 @@ const ManageCabinet = () => {
                 parentId: currentFolder ? currentFolder._id : null
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/folder`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/folder`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const ManageCabinet = () => {
                 formData.append('folderId', currentFolder._id);
             }
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/upload`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/upload`, {
                 method: 'POST',
                 body: formData,
             });
@@ -278,7 +278,7 @@ const ManageCabinet = () => {
 
         try {
             setError('');
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/files`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/files`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -313,7 +313,7 @@ const ManageCabinet = () => {
 
         try {
             setError('');
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/folder/${folderId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/folder/${folderId}`, {
                 method: 'DELETE',
             });
 
@@ -339,7 +339,7 @@ const ManageCabinet = () => {
         if (editFolderName.trim() && editingFolder) {
             try {
                 setError('');
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cabinet/folder/${editingFolder._id}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/cabinet/folder/${editingFolder._id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -770,7 +770,7 @@ const ManageCabinet = () => {
                                     <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
                                         {fileContent === 'image' ? (
                                             <img
-                                                src={`${import.meta.env.VITE_API_URL}/uploads/${viewingFile.path.split('/').pop()}`}
+                                                src={`${import.meta.env.VITE_UPLOAD_URL}/uploads/${viewingFile.path.split('/').pop()}`}
                                                 alt={viewingFile.name}
                                                 className="max-w-full mx-auto"
                                             />

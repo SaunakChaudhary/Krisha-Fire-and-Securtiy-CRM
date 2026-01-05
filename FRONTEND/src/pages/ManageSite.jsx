@@ -40,7 +40,7 @@ const ManageSites = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -93,7 +93,7 @@ const ManageSites = () => {
         setError(null);
         try {
             // Fetch sites
-            const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`);
+            const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/sites`);
             if (!sitesResponse.ok) {
                 throw new Error('Failed to fetch sites');
             }
@@ -102,7 +102,7 @@ const ManageSites = () => {
             setFilteredSites(sitesData);
 
             // Fetch companies
-            const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+            const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/company`);
             if (!companiesResponse.ok) {
                 throw new Error('Failed to fetch companies');
             }
@@ -182,7 +182,7 @@ const ManageSites = () => {
 
                 // Send to backend
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/sites/import`,
+                    `${import.meta.env.VITE_API_URL}/sites/import`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -299,7 +299,7 @@ const ManageSites = () => {
                                                 <tr>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site ID</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premises Type</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
@@ -313,7 +313,7 @@ const ManageSites = () => {
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{site.site_code}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{site.site_name}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {site.company_id?.company_name || 'N/A'}
+                                                            {site.customer_id.customer_name || 'N/A'}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{site.premises_type}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -394,8 +394,8 @@ const ManageSites = () => {
                                                 <div className="p-4 border-t border-gray-200">
                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                         <div>
-                                                            <p className="text-gray-500">Company</p>
-                                                            <p className="font-medium">{site.company_id?.company_name || 'N/A'}</p>
+                                                            <p className="text-gray-500">Customer</p>
+                                                            <p className="font-medium">{site.customer_id?.customer_name || 'N/A'}</p>
                                                         </div>
                                                         <div>
                                                             <p className="text-gray-500">Property Ref</p>
@@ -418,7 +418,7 @@ const ManageSites = () => {
                                                             <p className="text-gray-500">Mobile</p>
                                                             <p className="font-medium flex items-center">
                                                                 <Phone className="h-4 w-4 text-gray-400 mr-1" />
-                                                                {site.mobile}
+                                                                {site.contact_no}
                                                             </p>
                                                         </div>
                                                         <div className="col-span-2">
@@ -447,7 +447,7 @@ const ManageSites = () => {
                                                     </div>
                                                     <div className="mt-4 flex justify-end space-x-2">
                                                         <Link
-                                                            to={`/site/${site._id}/system`}
+                                                            to={`/site/${site._id}/system?status=${site.status}`}
                                                             className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                                                         >
                                                             <Settings2Icon className="-ml-0.5 mr-1.5 h-3 w-3" />

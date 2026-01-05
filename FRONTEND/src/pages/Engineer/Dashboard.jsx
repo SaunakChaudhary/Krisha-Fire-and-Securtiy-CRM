@@ -92,7 +92,7 @@ const EngineerDashboard = () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/diary/entries`
+          `${import.meta.env.VITE_API_URL}/diary/entries`
         );
 
         const data = await res.json();
@@ -143,7 +143,6 @@ const EngineerDashboard = () => {
     }
   }, [user]);
 
-  
   const updateTaskStatus = async (taskId, newStatusUI) => {
     const taskToUpdate = tasks.find(task => task.id === taskId);
     
@@ -167,7 +166,7 @@ const EngineerDashboard = () => {
       );
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/diary/entries/${taskId}`,
+        `${import.meta.env.VITE_API_URL}/diary/entries/${taskId}`,
         {
           method: "PUT",
           headers: {

@@ -41,7 +41,7 @@ const WorkType = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -86,7 +86,7 @@ const WorkType = () => {
   const [expandedWorkTypes, setExpandedWorkTypes] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
-  const API_URL = 'http://localhost:5000/api/work-type';
+  const API_URL = `${import.meta.env.VITE_API_URL}/work-type`;
 
   useEffect(() => {
     fetchWorkTypes();
@@ -173,7 +173,7 @@ const WorkType = () => {
       setWorkTypes(updatedWorkTypes);
 
       const workTypeId = workTypes[typeIndex]._id;
-      await axios.patch(
+      await axios.put(
         `${API_URL}/${workTypeId}/associations/${assocId}/toggle-display`
       );
 
@@ -196,7 +196,7 @@ const WorkType = () => {
         const newState = { ...prev };
         delete newState[typeId];
         return newState;
-      } 
+      }
       // Otherwise, close all others and open the clicked one
       else {
         return { [typeId]: true };
@@ -597,7 +597,7 @@ const WorkType = () => {
                 </div>
               </div>
             </div>
-  </div>
+          </div>
         </div>
       )}
 

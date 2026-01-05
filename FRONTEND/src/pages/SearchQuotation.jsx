@@ -57,7 +57,7 @@ const ManageQuotation = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -127,7 +127,7 @@ const ManageQuotation = () => {
   const fetchQuotations = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/quotation`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/quotation`);
       setQuotations(response.data.data);
       setFilteredQuotations(response.data.data);
       setError(null);
@@ -221,7 +221,7 @@ const ManageQuotation = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this quotation?")) {
       try {
-        await axios.delete(`${import.meta.env.VITE_API_URL}/api/quotation/${id}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/quotation/${id}`);
         toast.success("Quotation deleted successfully");
         await fetchQuotations(); // Refresh the list
       } catch (err) {
@@ -263,29 +263,31 @@ const ManageQuotation = () => {
 
   const generatePdf = async (quotation) => {
     try {
-      // Import dependencies
-      const { PDFDocument, rgb, degrees } = await import('pdf-lib');
-      const fontkit = (await import('@pdf-lib/fontkit')).default;
+      const { PDFDocument, rgb } = await import("pdf-lib");
+      const fontkit = (await import("@pdf-lib/fontkit")).default;
 
-      // Create document
       const pdfDoc = await PDFDocument.create();
       pdfDoc.registerFontkit(fontkit);
 
-      // Load assets
       const [fontRegular, fontBold, logoImage] = await Promise.all([
-        loadFont(pdfDoc, '/fonts/NotoSans-Regular.ttf'),
-        loadFont(pdfDoc, '/fonts/NotoSans-Bold.ttf'),
+        loadFont(pdfDoc, "/fonts/NotoSans-Regular.ttf"),
+        loadFont(pdfDoc, "/fonts/NotoSans-Bold.ttf"),
         loadImage(pdfDoc, logoPng)
       ]);
 
-      // Create page with A4 dimensions (595 x 842 points)
-      const page = pdfDoc.addPage([595, 842]);
-      const { width, height } = page.getSize();
+      // Page management
+      let currentPage = pdfDoc.addPage([595, 842]);
+      let pages = [currentPage];
+      let currentPageIndex = 0;
+
+      const pageWidth = 595;
+      const pageHeight = 842;
       const margin = 50;
       const fontSize = 10;
       const lineHeight = 15;
+      const footerHeight = 60;
+      const maxContentHeight = pageHeight - footerHeight;
 
-      // Configure colors
       const colors = {
         primary: rgb(0.1, 0.1, 0.6),
         secondary: rgb(0.2, 0.2, 0.6),
@@ -294,296 +296,521 @@ const ManageQuotation = () => {
         footerText: rgb(0.5, 0.5, 0.5)
       };
 
-      // Calculate totals using the same logic as AddQuotation page
       const totals = calculateQuotationTotals(quotation);
 
-      // Helper function for drawing text with word wrap
+      // Helper function to add new page
+      const addNewPage = () => {
+        currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
+        pages.push(currentPage);
+        currentPageIndex++;
+        return margin; // Return starting Y position for new page
+      };
+
+      // Helper function to check if we need a new page
+      const checkPageOverflow = (currentY, requiredSpace = 50) => {
+        if (currentY + requiredSpace > maxContentHeight) {
+          return addNewPage();
+        }
+        return currentY;
+      };
+
       const drawText = (text, x, y, options = {}) => {
-        const maxWidth = options.maxWidth || width - x - margin;
+        const maxWidth = options.maxWidth || pageWidth - x - margin;
         const size = options.size || fontSize;
         const font = options.font || fontRegular;
         const color = options.color || colors.text;
-        const lineHeight = options.lineHeight || 15;
+        const lh = options.lineHeight || lineHeight;
 
-        const words = text ? text.split(' ') : [];
-        let line = '';
+        const words = text ? text.split(" ") : [];
+        let line = "";
         let currentY = y;
 
         for (let i = 0; i < words.length; i++) {
-          const testLine = line + words[i] + ' ';
-          const testWidth = font.widthOfTextAtSize(testLine, size);
-
-          if (testWidth > maxWidth && i > 0) {
-            page.drawText(line, {
-              x,
-              y: height - currentY,
-              size,
-              font,
-              color,
-            });
-            currentY += lineHeight;
-            line = words[i] + ' ';
+          const testLine = line + words[i] + " ";
+          if (font.widthOfTextAtSize(testLine, size) > maxWidth && i > 0) {
+            currentY = checkPageOverflow(currentY, lh);
+            currentPage.drawText(line, { x, y: pageHeight - currentY, size, font, color });
+            currentY += lh;
+            line = words[i] + " ";
           } else {
             line = testLine;
           }
         }
 
-        // Draw remaining text
         if (line) {
-          page.drawText(line, {
-            x,
-            y: height - currentY,
-            size,
-            font,
-            color,
-          });
+          currentY = checkPageOverflow(currentY, lh);
+          currentPage.drawText(line, { x, y: pageHeight - currentY, size, font, color });
+          currentY += lh;
         }
 
-        return currentY - y + lineHeight;
+        return currentY;
       };
 
-      // --- Document Structure ---
-      await drawHeader();
-      await drawQuotationInfo();
-      await drawCustomerSection();
-      await drawProductsTable();
-      await drawSummary(totals);
-      await drawTermsAndFooter();
+      /* ---------- HEADER ---------- */
+      let currentY = drawHeader();
 
-      // Generate final PDF
+      /* ---------- QUOTATION INFO ---------- */
+      currentY = drawQuotationInfo(currentY);
+
+      /* ---------- CUSTOMER SECTION ---------- */
+      currentY = drawCustomerSection(currentY);
+
+      /* ---------- PRODUCTS ---------- */
+      currentY = drawProductsTable(currentY);
+
+      /* ---------- SUMMARY ---------- */
+      currentY = drawSummary(totals, currentY + 30);
+
+      /* ---------- TERMS ---------- */
+      drawTermsAndFooter(currentY + 40);
+
+      // Add page numbers to all pages
+      pages.forEach((page, index) => {
+        page.drawText(
+          `Page ${index + 1} of ${pages.length}`,
+          {
+            x: pageWidth / 2 - 30,
+            y: 30,
+            size: 8,
+            font: fontRegular,
+            color: colors.footerText
+          }
+        );
+      });
+
       const pdfBytes = await pdfDoc.save();
-      return new Blob([pdfBytes], { type: 'application/pdf' });
+      return new Blob([pdfBytes], { type: "application/pdf" });
 
-      // --- Component Functions ---
-      async function drawHeader() {
-        // Company logo
-        page.drawImage(logoImage, {
-          x: width - 200,
-          y: height - 85,
+      /* ================= FUNCTIONS ================= */
+
+      function drawHeader() {
+        currentPage.drawImage(logoImage, {
+          x: pageWidth - 200,
+          y: pageHeight - 85,
           width: 150,
           height: 60
         });
 
-        // Company info
-        drawText(quotation.company_id?.company_name || 'Your Company', margin, margin, {
+        let y = margin;
+
+        currentPage.drawText(quotation.company_id?.company_name || "", {
+          x: margin,
+          y: pageHeight - y,
           size: 20,
           font: fontBold,
           color: colors.primary
         });
 
-        drawText(quotation.company_id?.address || '123 Business St, City', margin, margin + 20);
+        y += 20;
+        currentPage.drawText("Sun Gravitas, 1110, Char Rasta,", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
 
-        drawText(
-          `Phone: ${quotation.company_id?.phone || '123-456-7890'} | Email: ${quotation.company_id?.email || 'info@company.com'}`,
-          margin,
-          margin + 35
-        );
+        y += 15;
+        currentPage.drawText("near Jivraj Park Bridge, Rajmani Society,", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
 
-        // Decorative line
-        page.drawLine({
-          start: { x: margin, y: height - 100 },
-          end: { x: width - margin, y: height - 100 },
+        y += 15;
+        currentPage.drawText("Satellite, Shyamal, Ahmedabad, Gujarat 380015", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        y += 15;
+        currentPage.drawText("Phone: 90999 26117", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        y += 20;
+        currentPage.drawLine({
+          start: { x: margin, y: pageHeight - y },
+          end: { x: pageWidth - margin, y: pageHeight - y },
           thickness: 2,
-          color: colors.secondary,
-        });
-      }
-
-      async function drawQuotationInfo() {
-        const detailsY = margin + 80;
-
-        drawText(`Quotation No: ${quotation.quotation_id || 'N/A'}`, 50, detailsY, {
-          font: fontBold
+          color: colors.secondary
         });
 
-        drawText(`Date: ${formatDate(quotation.createdAt)}`, 50, detailsY + 15);
+        return y + 15;
       }
 
-      async function drawCustomerSection() {
-        const customerY = margin + 140;
+      function drawQuotationInfo(startY) {
+        let y = startY;
+        y = checkPageOverflow(y, 40);
 
-        drawText('Bill To:', margin, customerY, {
+        currentPage.drawText(`Quotation No: ${quotation.quotation_id || "N/A"}`, {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
           font: fontBold,
-          size: 12
+          color: colors.text
         });
 
-        drawText(quotation.customer_id?.customer_name || 'Customer Name', margin, customerY + 15);
+        y += 15;
+        currentPage.drawText(`Date: ${formatDate(quotation.createdAt)}`, {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
 
-        const addressLines = [
+        return y + 20;
+      }
+
+      function drawCustomerSection(startY) {
+        let y = startY;
+        y = checkPageOverflow(y, 100);
+
+        currentPage.drawText("Bill To:", {
+          x: margin,
+          y: pageHeight - y,
+          size: 12,
+          font: fontBold,
+          color: colors.text
+        });
+
+        y += 15;
+        currentPage.drawText(quotation.customer_id?.customer_name || "Customer Name", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        const address = [
           quotation.customer_id?.address?.line1,
           quotation.customer_id?.address?.line2,
-          `${quotation.customer_id?.address?.city || ''}, ${quotation.customer_id?.address?.state || ''}`
-        ].filter(Boolean).join(', ');
+          `${quotation.customer_id?.address?.city || ""}, ${quotation.customer_id?.address?.state || ""}`
+        ].filter(Boolean).join(", ");
 
-        drawText(addressLines, margin, customerY + 30);
-        drawText(`Phone: ${quotation.customer_id?.mobile_no || 'N/A'}`, margin, customerY + 45);
-        drawText(`Email: ${quotation.customer_id?.email || 'N/A'}`, margin, customerY + 60);
+        y += 15;
+        y = drawText(address, margin, y);
+
+        y += 5;
+        currentPage.drawText(`Phone: ${quotation.customer_id?.mobile_no || "N/A"}`, {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        y += 15;
+        currentPage.drawText(`Email: ${quotation.customer_id?.email || "N/A"}`, {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        return y + 25;
       }
 
-      async function drawProductsTable() {
-        const tableStartY = margin + 230;
-        const colWidths = { sno: 30, desc: 250, qty: 60, price: 80, total: 80 };
+      function drawProductsTable(startY) {
+        let y = startY;
+        y = checkPageOverflow(y, 50);
 
-        // Table header
-        const drawTableHeader = (y) => {
-          // Header background
-          page.drawRectangle({
+        const colWidths = {
+          sno: 30,
+          desc: 220,
+          qty: 50,
+          price: 70,
+          inst: 80,
+          total: 80
+        };
+
+        const colX = {
+          sno: margin,
+          desc: margin + colWidths.sno,
+          qty: margin + colWidths.sno + colWidths.desc,
+          price: margin + colWidths.sno + colWidths.desc + colWidths.qty,
+          inst: margin + colWidths.sno + colWidths.desc + colWidths.qty + colWidths.price,
+          total: margin + colWidths.sno + colWidths.desc + colWidths.qty + colWidths.price + colWidths.inst
+        };
+
+        const drawTableHeader = (yPos) => {
+          currentPage.drawRectangle({
             x: margin - 5,
-            y: height - y - 10,
-            width: width - margin * 2 + 10,
+            y: pageHeight - yPos - 10,
+            width: pageWidth - margin * 2 + 10,
             height: 20,
             color: colors.secondary
           });
 
-          // Column headers
-          const headers = ['#', 'Product', 'Qty', 'Unit Price', 'Total'];
-          const positions = [
-            margin,
-            margin + colWidths.sno,
-            width - margin - colWidths.price - colWidths.total - colWidths.qty,
-            width - margin - colWidths.total - colWidths.price,
-            width - margin - colWidths.total
-          ];
-
-          headers.forEach((text, i) => {
-            drawText(text, positions[i], y + 2, {
-              font: fontBold,
+          const headers = ["#", "Product", "Qty", "Unit Price", "Installation", "Total"];
+          headers.forEach((h, i) => {
+            currentPage.drawText(h, {
+              x: Object.values(colX)[i],
+              y: pageHeight - yPos - 2,
               size: 11,
+              font: fontBold,
               color: rgb(1, 1, 1)
             });
           });
+
+          return yPos + 25;
         };
 
-        drawTableHeader(tableStartY);
+        y = drawTableHeader(y);
 
-        // Table rows
-        let yPosition = tableStartY + 25;
         quotation.product_details?.forEach((product, index) => {
-          const price = product.price ? parseFloat(product.price).toFixed(2) : '0.00';
-          const total = product.total_amount ? parseFloat(product.total_amount).toFixed(2) : '0.00';
+          // Check if we need a new page for this product row
+          const estimatedRowHeight = 25;
+          if (y + estimatedRowHeight > maxContentHeight) {
+            y = addNewPage();
+            y = drawTableHeader(y);
+          }
 
-          // Alternate row shading
+          const unitPrice = product.price
+            ? parseFloat(product.price).toFixed(2)
+            : "0.00";
+
+          const instPrice = product.installation_price
+            ? parseFloat(product.installation_price * product.quantity).toFixed(2)
+            : "0.00";
+
+          const total = product.total_amount
+            ? parseFloat(product.total_amount + product.installation_price * product.quantity).toFixed(2)
+            : "0.00";
+
           if (index % 2 === 0) {
-            page.drawRectangle({
+            currentPage.drawRectangle({
               x: margin - 5,
-              y: height - yPosition - 10,
-              width: width - margin * 2 + 10,
+              y: pageHeight - y - 10,
+              width: pageWidth - margin * 2 + 10,
               height: 20,
               color: colors.lightBg
             });
           }
 
-          // Row content
-          drawText(`${index + 1}`, margin, yPosition);
-
-          // Handle long product names with word wrap
-          const productName = product.product_id?.product_name || 'Product';
-          const productNameHeight = drawText(productName, margin + colWidths.sno, yPosition, {
-            maxWidth: colWidths.desc
+          currentPage.drawText(`${index + 1}`, {
+            x: colX.sno,
+            y: pageHeight - y,
+            size: fontSize,
+            font: fontRegular,
+            color: colors.text
           });
 
-          drawText(product.quantity ? String(product.quantity) : '0',
-            width - margin - colWidths.price - colWidths.total - colWidths.qty, yPosition);
-          drawText(`₹${price}`, width - margin - colWidths.total - colWidths.price, yPosition);
-          drawText(`₹${total}`, width - margin - colWidths.total, yPosition);
+          const productName = product.product_id?.product_name || "Product";
+          const maxProductNameWidth = colWidths.desc - 10;
+          const nameLines = [];
+          let currentLine = "";
 
-          // Adjust y position based on product name height
-          yPosition += Math.max(20, productNameHeight);
+          productName.split(" ").forEach(word => {
+            const testLine = currentLine + word + " ";
+            if (fontRegular.widthOfTextAtSize(testLine, fontSize) > maxProductNameWidth) {
+              if (currentLine) nameLines.push(currentLine.trim());
+              currentLine = word + " ";
+            } else {
+              currentLine = testLine;
+            }
+          });
+          if (currentLine) nameLines.push(currentLine.trim());
+
+          nameLines.forEach((line, lineIndex) => {
+            currentPage.drawText(line, {
+              x: colX.desc,
+              y: pageHeight - y - (lineIndex * 12),
+              size: fontSize,
+              font: fontRegular,
+              color: colors.text
+            });
+          });
+
+          currentPage.drawText(String(product.quantity || 0), {
+            x: colX.qty,
+            y: pageHeight - y,
+            size: fontSize,
+            font: fontRegular,
+            color: colors.text
+          });
+
+          currentPage.drawText(`₹${unitPrice}`, {
+            x: colX.price,
+            y: pageHeight - y,
+            size: fontSize,
+            font: fontRegular,
+            color: colors.text
+          });
+
+          currentPage.drawText(`₹${instPrice}`, {
+            x: colX.inst,
+            y: pageHeight - y,
+            size: fontSize,
+            font: fontRegular,
+            color: colors.text
+          });
+
+          currentPage.drawText(`₹${total}`, {
+            x: colX.total,
+            y: pageHeight - y,
+            size: fontSize,
+            font: fontRegular,
+            color: colors.text
+          });
+
+          y += Math.max(20, nameLines.length * 12);
         });
+
+        return y;
       }
 
-      async function drawSummary(totals) {
-        const boxY = margin + 320;
+      function drawSummary(totals, startY) {
+        let y = startY;
+        y = checkPageOverflow(y, 120);
 
-        // Summary content - Using the same calculation logic as AddQuotation
-        drawText('Subtotal:', width - 250, boxY, { font: fontBold });
-        drawText(`₹${totals.subtotal.toFixed(2)}`, width - 130, boxY);
-
-        drawText(`GST Amount:`, width - 250, boxY + 20, {
-          font: fontBold
-        });
-        drawText(`₹${totals.totalGst.toFixed(2)}`, width - 130, boxY + 20);
-
-        drawText('Installation Subtotal:', width - 250, boxY + 40, {
+        currentPage.drawText("Subtotal:", {
+          x: pageWidth - 320,
+          y: pageHeight - y,
+          size: fontSize,
           font: fontBold,
-          size: 10
-        });
-        drawText(`₹${totals.installationSubtotal.toFixed(2)}`, width - 130, boxY + 40);
-
-        drawText('Installation GST:', width - 250, boxY + 60, {
-          font: fontBold,
-          size: 10
-        });
-        drawText(`₹${totals.installationGst.toFixed(2)}`, width - 130, boxY + 60);
-
-        drawText('Total Amount:', width - 250, boxY + 80, {
-          font: fontBold,
-          size: 10
-        });
-        drawText(`₹${(totals.subtotal + totals.totalGst).toFixed(2)}`, width - 130, boxY + 80, {
-          font: fontBold,
-          size: 10
+          color: colors.text
         });
 
-        drawText('Installation Total:', width - 250, boxY + 100, {
-          font: fontBold,
-          size: 10
-        });
-        drawText(`₹${(totals.installationSubtotal + totals.installationGst).toFixed(2)}`, width - 130, boxY + 100, {
-          font: fontBold,
-          size: 10
+        currentPage.drawText(`₹${totals.subtotal.toFixed(2)}`, {
+          x: pageWidth - 245,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
         });
 
-        // Draw a horizontal line above Gross Total
-        page.drawLine({
-          start: { x: width - 260, y: height - (boxY + 118) },
-          end: { x: width - 60, y: height - (boxY + 118) },
+        currentPage.drawText(`₹${totals.installationSubtotal.toFixed(2)}`, {
+          x: pageWidth - 175,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        currentPage.drawText(`₹${(totals.subtotal + totals.installationSubtotal).toFixed(2)}`, {
+          x: pageWidth - 95,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontBold,
+          color: colors.text
+        });
+
+        y += 20;
+        currentPage.drawText("GST Amount:", {
+          x: pageWidth - 320,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontBold,
+          color: colors.text
+        });
+
+        currentPage.drawText(`₹${totals.totalGst.toFixed(2)}`, {
+          x: pageWidth - 245,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        currentPage.drawText(`₹${totals.installationGst.toFixed(2)}`, {
+          x: pageWidth - 175,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontRegular,
+          color: colors.text
+        });
+
+        currentPage.drawText(`₹${(totals.totalGst + totals.installationGst).toFixed(2)}`, {
+          x: pageWidth - 95,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontBold,
+          color: colors.text
+        });
+
+        y += 20;
+        currentPage.drawLine({
+          start: { x: pageWidth - 240, y: pageHeight - y },
+          end: { x: pageWidth - 40, y: pageHeight - y },
           thickness: 1,
-          color: colors.secondary,
+          color: colors.secondary
         });
 
-        drawText('Gross Total:', width - 250, boxY + 135, {
+        y += 20;
+        currentPage.drawText("Gross Total:", {
+          x: pageWidth - 200,
+          y: pageHeight - y,
+          size: 12,
           font: fontBold,
-          size: 12
+          color: colors.text
         });
-        drawText(`₹${totals.grossTotal.toFixed(2)}`, width - 130, boxY + 135, {
+
+        currentPage.drawText(`₹${totals.grossTotal.toFixed(2)}`, {
+          x: pageWidth - 95,
+          y: pageHeight - y,
+          size: 12,
           font: fontBold,
-          size: 12
+          color: colors.text
         });
+
+        return y + 20;
       }
 
-      async function drawTermsAndFooter() {
-        const termsY = margin + 580;
+      function drawTermsAndFooter(startY) {
+        let y = startY;
+        y = checkPageOverflow(y, 80);
 
-        // Terms & Conditions
-        drawText('Terms & Conditions:', margin, termsY, {
-          font: fontBold
+        currentPage.drawText("Terms & Conditions:", {
+          x: margin,
+          y: pageHeight - y,
+          size: fontSize,
+          font: fontBold,
+          color: colors.text
         });
 
-        drawText(
-          quotation.terms_and_conditions ||
-          '1. Payment within 15 days\n2. Late fee 2% per month\n3. Goods remain property until paid',
-          margin,
-          termsY + 20,
-          { maxWidth: width - margin * 2, lineHeight: 14 }
-        );
+        y += 20;
+        const terms = quotation.terms_and_conditions ||
+          "1. Payment within 15 days\n2. Late fee 2% per month\n3. Goods remain property until paid";
 
-        // Footer
-        const footerY = height - margin + 20;
+        y = drawText(terms, margin, y, {
+          maxWidth: pageWidth - margin * 2,
+          lineHeight: 14
+        });
 
-        drawText('Thank you for your business!', margin, footerY, {
+        // Footer on last page
+        currentPage.drawText("Thank you for your business!", {
+          x: margin,
+          y: 50,
           size: 12,
+          font: fontRegular,
           color: colors.footerText
         });
 
-        drawText(`Generated on ${formatDate(new Date())}`, width - 150, footerY, {
+        currentPage.drawText(`Generated on ${formatDate(new Date())}`, {
+          x: pageWidth - 150,
+          y: 50,
           size: 10,
+          font: fontRegular,
           color: colors.footerText
         });
       }
 
     } catch (err) {
       console.error("Error generating PDF:", err);
-      throw new Error('Failed to generate PDF document');
+      throw new Error("Failed to generate PDF document");
     }
   };
 
@@ -651,7 +878,6 @@ const ManageQuotation = () => {
   const currentItems = filteredQuotations.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
 
-  // Modal styles
   const customStyles = {
     content: {
       top: '0',
@@ -886,6 +1112,9 @@ const ManageQuotation = () => {
                       <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
                         Total Amount
                       </th>
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
@@ -914,6 +1143,9 @@ const ManageQuotation = () => {
                             </td>
                             <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                               ₹{totals.grossTotal.toLocaleString()}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                              {quotation.sales_enquiry_id?.status || 'N/A'}
                             </td>
                             <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
                               <div className="flex justify-end space-x-2">
@@ -974,6 +1206,11 @@ const ManageQuotation = () => {
                           <div>
                             <h3 className="text-sm font-bold text-gray-800">{quotation.quotation_id}</h3>
                             <p className="text-xs text-gray-600 mt-2">{quotation.company_id?.company_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                              {quotation.sales_enquiry_id?.status || 'N/A'}
+                            </span>
                           </div>
                           <div className="flex space-x-2">
                             <button

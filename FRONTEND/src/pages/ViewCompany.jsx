@@ -41,7 +41,7 @@ const ViewCompany = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -92,13 +92,13 @@ const ViewCompany = () => {
         const fetchCompanyData = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/${id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/company/${id}`);
                 const data = await response.json();
 
                 if (response.ok) {
                     setCompanyData(data);
                     if (data.logo) {
-                        const baseApi = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+                        const baseApi = import.meta.env.VITE_UPLOAD_URL.replace(/\/$/, '');
                         setLogoUrl(`${baseApi}/${data.logo}`);
                     }
                 } else {

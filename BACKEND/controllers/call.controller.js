@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const Call = require("../models/call.model"); // Adjust the path as needed
+const Diary = require("../models/diary.model"); // Adjust the path as needed
 
 exports.addCall = async (req, res) => {
   try {
@@ -160,8 +161,7 @@ exports.getCallDetails = async (req, res) => {
     const responseData = {
       ...call,
       // Add any computed fields here
-      isOverdue:
-        call.deadline && new Date(call.deadline) < new Date(),
+      isOverdue: call.deadline && new Date(call.deadline) < new Date(),
     };
 
     res.status(200).json({
@@ -300,7 +300,7 @@ exports.editCall = async (req, res) => {
       invoice_date,
       invoice_value,
       remarks,
-      status 
+      status,
     } = req.body;
 
     // Basic validation for required fields
@@ -328,37 +328,66 @@ exports.editCall = async (req, res) => {
       });
     }
 
-    // Prepare update object with only the fields that are provided
     const updateFields = {
       site_id: site_id !== undefined ? site_id : existingCall.site_id,
-      site_system: site_system !== undefined ? site_system : existingCall.site_system,
+      site_system:
+        site_system !== undefined ? site_system : existingCall.site_system,
       call_type: call_type !== undefined ? call_type : existingCall.call_type,
-      call_reason: call_reason !== undefined ? call_reason : existingCall.call_reason,
+      call_reason:
+        call_reason !== undefined ? call_reason : existingCall.call_reason,
       waiting: waiting !== undefined ? waiting : existingCall.waiting,
-      call_waiting_reason: waiting ? 
-        (call_waiting_reason !== undefined ? call_waiting_reason : existingCall.call_waiting_reason) : 
-        undefined,
+      call_waiting_reason: waiting
+        ? call_waiting_reason !== undefined
+          ? call_waiting_reason
+          : existingCall.call_waiting_reason
+        : undefined,
       chargable: chargable !== undefined ? chargable : existingCall.chargable,
       invoiced: invoiced !== undefined ? invoiced : existingCall.invoiced,
-      bill_on_maintenance: bill_on_maintenance !== undefined ? bill_on_maintenance : existingCall.bill_on_maintenance,
+      bill_on_maintenance:
+        bill_on_maintenance !== undefined
+          ? bill_on_maintenance
+          : existingCall.bill_on_maintenance,
       priority: priority !== undefined ? priority : existingCall.priority,
       deadline: deadline !== undefined ? deadline : existingCall.deadline,
       logged_by: logged_by !== undefined ? logged_by : existingCall.logged_by,
-      caller_name: caller_name !== undefined ? caller_name : existingCall.caller_name,
-      caller_number: caller_number !== undefined ? caller_number : existingCall.caller_number,
-      caller_email: caller_email !== undefined ? caller_email : existingCall.caller_email,
-      next_action: next_action !== undefined ? next_action : existingCall.next_action,
-      engineer_id: engineer_id !== undefined ? engineer_id : existingCall.engineer_id,
-      assign_date: assign_date !== undefined ? assign_date : existingCall.assign_date,
-      invoice_no: invoice_no !== undefined ? invoice_no : existingCall.invoice_no,
-      invoice_date: invoice_date !== undefined ? invoice_date : existingCall.invoice_date,
-      invoice_value: invoice_value !== undefined ? invoice_value : existingCall.invoice_value,
+      caller_name:
+        caller_name !== undefined ? caller_name : existingCall.caller_name,
+      caller_number:
+        caller_number !== undefined
+          ? caller_number
+          : existingCall.caller_number,
+      caller_email:
+        caller_email !== undefined ? caller_email : existingCall.caller_email,
+      next_action:
+        next_action !== undefined ? next_action : existingCall.next_action,
+      engineer_id:
+        engineer_id !== undefined ? engineer_id : existingCall.engineer_id,
+      assign_date:
+        assign_date !== undefined ? assign_date : existingCall.assign_date,
+      invoice_no:
+        invoice_no !== undefined ? invoice_no : existingCall.invoice_no,
+      invoice_date:
+        invoice_date !== undefined ? invoice_date : existingCall.invoice_date,
+      invoice_value:
+        invoice_value !== undefined
+          ? invoice_value
+          : existingCall.invoice_value,
       remarks: remarks !== undefined ? remarks : existingCall.remarks,
       status: status !== undefined ? status : existingCall.status,
-      updated_at: new Date() // Always update the timestamp
+      updated_at: new Date(), // Always update the timestamp
     };
 
-    // Perform the update
+    await Diary.findOneAndUpdate(
+      { callLog: id },
+      {
+        ...(site_id !== undefined && { site: site_id }),
+        ...(engineer_id !== undefined && { engineer: engineer_id }),
+        ...(assign_date !== undefined && { date: assign_date }),
+
+      },
+      { runValidators: true }
+    );
+
     const updatedCall = await Call.findByIdAndUpdate(
       id,
       { $set: updateFields },

@@ -27,7 +27,7 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password/${token}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -48,7 +48,7 @@ const ResetPassword = () => {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center px-28"
+      className="min-h-screen w-full flex items-center lg:px-28 p-4"
       style={{
         backgroundSize: 'cover',
         backgroundImage: 'url(../loginbg.jpg)',

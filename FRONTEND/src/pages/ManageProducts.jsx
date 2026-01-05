@@ -39,7 +39,7 @@ const ManageProducts = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -88,7 +88,7 @@ const ManageProducts = () => {
             try {
                 // Fetch products
                 const productsResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/products`
+                    `${import.meta.env.VITE_API_URL}/products`
                 );
                 const productsData = await productsResponse.json();
                 setProducts(productsData.data || []);
@@ -96,7 +96,7 @@ const ManageProducts = () => {
 
                 // Fetch product groups
                 const pgResponse = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/reference-codes/category/productGroup`
+                    `${import.meta.env.VITE_API_URL}/reference-codes/category/productGroup`
                 );
                 const pgData = await pgResponse.json();
                 setProductGroups(pgData || []);

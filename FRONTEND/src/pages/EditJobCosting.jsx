@@ -40,7 +40,7 @@ const EditJobCosting = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -105,7 +105,7 @@ const EditJobCosting = () => {
 
         // Fetch products first so we can match them with the job costing products
         const productsRes = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/products`
+          `${import.meta.env.VITE_API_URL}/products`
         );
         if (!productsRes.ok) throw new Error("Failed to fetch products");
         const productsData = await productsRes.json();
@@ -113,7 +113,7 @@ const EditJobCosting = () => {
 
         // Fetch job costing record
         const jobCostingRes = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/job-costing/${id}`,
+          `${import.meta.env.VITE_API_URL}/job-costing/${id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -126,7 +126,7 @@ const EditJobCosting = () => {
 
         // Fetch customers
         const customersRes = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/customers`
+          `${import.meta.env.VITE_API_URL}/customers`
         );
         if (!customersRes.ok) throw new Error("Failed to fetch customers");
         const customersData = await customersRes.json();
@@ -178,7 +178,7 @@ const EditJobCosting = () => {
         // Fetch sites for the customer if customer_id exists
         if (jobCostingData.customer_id) {
           const sitesRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/sites?customer_id=${jobCostingData.customer_id._id || jobCostingData.customer_id
+            `${import.meta.env.VITE_API_URL}/sites?customer_id=${jobCostingData.customer_id._id || jobCostingData.customer_id
             }`
           );
           if (!sitesRes.ok) throw new Error("Failed to fetch sites");
@@ -189,7 +189,7 @@ const EditJobCosting = () => {
         // Fetch quotations for the site if site_id exists
         if (jobCostingData.site_id) {
           const quotationsRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/quotation`
+            `${import.meta.env.VITE_API_URL}/quotation`
           );
           if (!quotationsRes.ok) throw new Error("Failed to fetch quotations");
           const quotationsData = await quotationsRes.json();
@@ -311,7 +311,7 @@ const EditJobCosting = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/job-costing/${id}`,
+        `${import.meta.env.VITE_API_URL}/job-costing/${id}`,
         {
           method: "PUT",
           headers: {

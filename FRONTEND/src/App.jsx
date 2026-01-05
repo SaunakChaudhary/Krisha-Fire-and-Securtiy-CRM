@@ -70,6 +70,9 @@ import ManageCabinet from './pages/ManageCabinet'
 import SetUserPermission from './pages/SetUserPermission'
 import ProtectedRouteUser from './components/ProtectedRouteUser'
 import UserUnAuthorised from './pages/UserUnAuthorised'
+import DiaryCalendar from './pages/DiaryCalendar'
+import CustomerDocuments from './pages/CustomerDocuments'
+import Calender from './pages/Engineer/Calender'
 
 const App = () => {
   return (
@@ -101,6 +104,7 @@ const App = () => {
         <Route path="/search-customer" element={<ManageCustomer />} />
         <Route path="/customers/view/:id" element={<ViewCustomer />} />
         <Route path="/customers/edit/:id" element={<EditCustomer />} />
+        <Route path="/customers/:customerId/documents" element={<CustomerDocuments />} />
 
         {/* Add Site */}
         <Route path="/add-site" element={<AddSite />} />
@@ -136,6 +140,7 @@ const App = () => {
         {/* Manage Diary  */}
         <Route path="/manage-diary" element={<Diary />} />
         <Route path="/manage-diary/:engineer_id/:call_no" element={<Diary />} />
+        <Route path="/diary-calendar" element={<DiaryCalendar />} />
 
         {/* Supplier  */}
         <Route path="/add-supplier" element={<AddSupplier />} />
@@ -182,6 +187,7 @@ const App = () => {
       <Route element={<ProtectedRoute allowedRoles={["Engineer"]} />}>
         {/* Engineer Panel */}
         <Route path="/engineer/dashboard" element={<EngineerDashboard />} />
+        <Route path="/engineer/calender" element={<Calender />} />
         <Route path="/engineer/task/:taskId" element={<TaskDetails />} />
       </Route>
 

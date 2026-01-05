@@ -248,7 +248,6 @@ exports.deleteSite = async (req, res) => {
 exports.bulkUploadSites = async (req, res) => {
   try {
     const sitesData = req.body;
-
     if (!Array.isArray(sitesData) || sitesData.length === 0) {
       return res.status(400).json({ message: "Invalid or empty data" });
     }
@@ -313,7 +312,6 @@ exports.bulkUploadSites = async (req, res) => {
           // Site Systems (if provided in Excel/JSON)
           site_systems: data.site_systems || [],
         });
-
         const savedSite = await site.save();
         createdSites.push(savedSite);
       } catch (err) {
@@ -325,12 +323,19 @@ exports.bulkUploadSites = async (req, res) => {
     }
 
     if (errors.length > 0) {
+      console.log({
+        message: "Partial success",
+        inserted: createdSites.length,
+        failed: errors.length,
+        errors,
+      });
       return res.status(207).json({
         message: "Partial success",
         inserted: createdSites.length,
         failed: errors.length,
         errors,
       });
+   
     }
 
     res.status(201).json({

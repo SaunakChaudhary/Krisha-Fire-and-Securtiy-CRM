@@ -16,6 +16,6 @@ router
 router
   .route("/:id")
   .get(systemController.getSystem)
-  .patch(systemController.updateSystem);
+  .put(systemController.updateSystem);
 
 module.exports = router;

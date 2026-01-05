@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -40,7 +40,7 @@ const ViewDeliveryChallan = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -80,12 +80,14 @@ const ViewDeliveryChallan = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [printMode, setPrintMode] = useState(false);
+    const printRef = useRef();
+
 
     useEffect(() => {
         const fetchChallan = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans/${id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans/${id}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch delivery challan');
@@ -106,11 +108,20 @@ const ViewDeliveryChallan = () => {
 
     const handlePrint = () => {
         setPrintMode(true);
+
         setTimeout(() => {
             window.print();
+
+            const revert = () => {
+                setPrintMode(false);
+                window.removeEventListener("afterprint", revert);
+            };
+
+            window.addEventListener("afterprint", revert);
             setPrintMode(false);
-        }, 500);
+        }, 300);
     };
+
 
     if (loading) {
         return (
@@ -479,6 +490,16 @@ const ViewDeliveryChallan = () => {
                     tr {
                         page-break-inside: avoid;
                         page-break-after: auto;
+                    }
+                    html, body {
+                      width: 100%;
+                      height: auto !important;
+                      -webkit-print-color-adjust: exact;
+                      print-color-adjust: exact;
+                    }
+                  
+                    .print-mode * {
+                      visibility: visible !important;
                     }
                 }
             `}</style>

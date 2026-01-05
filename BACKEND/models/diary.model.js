@@ -44,11 +44,12 @@ const diarySchema = new mongoose.Schema(
       },
     },
     date: {
-      type: Date,
-      required: [true, "Date is required"],
+      type: String, // YYYY-MM-DD
+      required: true,
       validate: {
         validator: function (value) {
-          return value >= new Date().setHours(0, 0, 0, 0);
+          const today = new Date().toISOString().slice(0, 10);
+          return value >= today;
         },
         message: "Date cannot be in the past",
       },
@@ -116,7 +117,6 @@ const diarySchema = new mongoose.Schema(
   }
 );
 
-// Virtual for duration calculation
 diarySchema.virtual("calculatedDuration").get(function () {
   const [sh, sm] = String(this.startTime || "0:0")
     .split(":")
@@ -135,7 +135,6 @@ diarySchema.virtual("calculatedDuration").get(function () {
   return `${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
 });
 
-// Pre-validate hook to calculate duration before validation runs
 diarySchema.pre("validate", function (next) {
   if (this.isModified("startTime") || this.isModified("endTime")) {
     this.duration = this.calculatedDuration;

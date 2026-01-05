@@ -47,7 +47,7 @@ const { user } = useContext(AuthContext);
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -106,7 +106,7 @@ const { user } = useContext(AuthContext);
   const fetchAccessTypes = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types/`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/access-types/`);
       if (!response.ok) {
         throw new Error('Failed to fetch access types');
       }
@@ -169,7 +169,7 @@ const { user } = useContext(AuthContext);
       };
 
       if (formData.id) {
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types/${formData.id}`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/access-types/${formData.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const { user } = useContext(AuthContext);
         });
       } else {
         // Create new
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types/`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/access-types/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

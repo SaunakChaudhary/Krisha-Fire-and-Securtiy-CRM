@@ -40,7 +40,7 @@ const EditCall = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -98,7 +98,7 @@ const EditCall = () => {
         next_action: '',
         engineer_id: '',
         assign_date: '',
-        logged_by: user.user._id,
+        logged_by: user?.user?._id || user?._id,
         invoice_no: '',
         invoice_date: '',
         invoice_value: '',
@@ -163,12 +163,12 @@ const EditCall = () => {
                     waitingReasonsData,
                     usersData
                 ] = await Promise.all([
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/calls/${id}`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/work-type`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callReason`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/waitingReason`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/calls/${id}`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/work-type`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/reference-codes/category/callReason`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/reference-codes/category/waitingReason`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/user`)
                 ]);
 
                 // Set the existing call data
@@ -213,7 +213,7 @@ const EditCall = () => {
                 // Fetch site systems if site_id is present
                 if (existingCall.site_id) {
                     const siteData = await fetchWithErrorHandling(
-                        `${import.meta.env.VITE_API_URL}/api/sites/${existingCall.site_id._id || existingCall.site_id}`
+                        `${import.meta.env.VITE_API_URL}/sites/${existingCall.site_id._id || existingCall.site_id}`
                     );
                     setSiteSystems(siteData.site_systems || []);
                 }
@@ -237,7 +237,7 @@ const EditCall = () => {
             const fetchSiteSystems = async () => {
                 try {
                     const siteData = await fetchWithErrorHandling(
-                        `${import.meta.env.VITE_API_URL}/api/sites/${formData.site_id}`
+                        `${import.meta.env.VITE_API_URL}/sites/${formData.site_id}`
                     );
                     setSiteSystems(siteData.site_systems || []);
                 } catch (error) {
@@ -254,7 +254,7 @@ const EditCall = () => {
             if (formData.call_reason && formData.site_id && formData.site_system) {
                 try {
                     const siteData = await fetchWithErrorHandling(
-                        `${import.meta.env.VITE_API_URL}/api/sites/${formData.site_id}`
+                        `${import.meta.env.VITE_API_URL}/sites/${formData.site_id}`
                     );
 
                     const selectedSystem = siteData.site_systems.find(
@@ -370,6 +370,7 @@ const EditCall = () => {
 
             // Prepare the payload according to your controller requirements
             const payload = {
+                call_number: formData.call_number,
                 site_id: formData.site_id,
                 site_system: formData.site_system,
                 call_type: formData.call_type,
@@ -396,7 +397,7 @@ const EditCall = () => {
             };
 
             const response = await fetchWithErrorHandling(
-                `${import.meta.env.VITE_API_URL}/api/calls/${id}`,
+                `${import.meta.env.VITE_API_URL}/calls/${id}`,
                 {
                     method: 'PUT',
                     headers: {

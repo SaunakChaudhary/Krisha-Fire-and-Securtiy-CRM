@@ -12,9 +12,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      'http://localhost:5173',
+      'https://erp.krishaengg.com'  
+    ],
     credentials: true,
-  })
+  })  
 );
 
 // Serve static files from /uploads
@@ -47,6 +50,7 @@ const deliveryChallanRoutes = require("./routes/deliveryChallan.routes");
 const cabinetRoutes = require("./routes/cabinet.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const permissionRoutes = require("./routes/permission.routes");
+const customerDocumentRoutes = require("./routes/customerDocument.routes");
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/access-types", UserAccessRouter);
@@ -70,7 +74,7 @@ app.use("/api/delivery-challans", deliveryChallanRoutes);
 app.use("/api/cabinet", cabinetRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/permissions", permissionRoutes);
-
+app.use("/api/customer-document", customerDocumentRoutes);
 DB()
   .then(async () => {
     await seedDefaults();

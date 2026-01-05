@@ -50,7 +50,7 @@ const SetUserPermission = () => {
     const fetchData = async () => {
       try {
         // Fetch access types
-        const accessTypesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/access-types`);
+        const accessTypesResponse = await fetch(`${import.meta.env.VITE_API_URL}/access-types`);
         if (!accessTypesResponse.ok) {
           throw new Error('Failed to fetch access types');
         }
@@ -58,7 +58,7 @@ const SetUserPermission = () => {
         setAccessTypes(accessTypesData.filter((at)=> at.name != "Engineer"));
 
         // Fetch existing permissions
-        const permissionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions`);
+        const permissionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/permissions`);
         if (!permissionsResponse.ok) {
           throw new Error('Failed to fetch permissions');
         }
@@ -147,7 +147,7 @@ const SetUserPermission = () => {
         try {
           // First try to update existing permission
           const updateResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/permissions/${roleId}`,
+            `${import.meta.env.VITE_API_URL}/permissions/${roleId}`,
             {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -163,7 +163,7 @@ const SetUserPermission = () => {
           }
 
           // If update fails, try to create new permission
-          const createResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions`, {
+          const createResponse = await fetch(`${import.meta.env.VITE_API_URL}/permissions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -189,7 +189,7 @@ const SetUserPermission = () => {
       setSaveStatus("success");
 
       // Refresh permissions
-      const permissionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions`);
+      const permissionsResponse = await fetch(`${import.meta.env.VITE_API_URL}/permissions`);
       const permissionsData = await permissionsResponse.json();
       setCurrentPermissions(permissionsData);
     } catch (error) {

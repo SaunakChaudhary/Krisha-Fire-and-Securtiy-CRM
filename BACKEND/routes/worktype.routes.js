@@ -12,7 +12,7 @@ router.delete(
   "/:id/associations/:assocId",
   workTypeController.deleteAssociation
 );
-router.patch(
+router.put(
   "/:id/associations/:assocId/toggle-display",
   workTypeController.toggleAssociationDisplay
 );

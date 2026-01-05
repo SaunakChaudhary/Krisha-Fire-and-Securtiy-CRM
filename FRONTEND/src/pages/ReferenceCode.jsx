@@ -39,7 +39,7 @@ const ReferenceCode = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -91,7 +91,7 @@ const ReferenceCode = () => {
 
         const fetchReferences = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/${selectedCategory}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/category/${selectedCategory}`);
                 const data = await res.json();
                 setReferenceList(data);
             } catch (err) {
@@ -129,7 +129,7 @@ const ReferenceCode = () => {
             let res;
             if (isEditing && editingId) {
                 // Update existing reference
-                res = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/${editingId}`, {
+                res = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/${editingId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -138,7 +138,7 @@ const ReferenceCode = () => {
                     })
                 });
             } else {
-                res = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes`, {
+                res = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

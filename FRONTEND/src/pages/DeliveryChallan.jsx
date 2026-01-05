@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 const DeliveryChallan = () => {
     const { user } = useContext(AuthContext);
-
     const navigate = useNavigate();
     const [permissions, setPermissions] = useState(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -38,7 +37,7 @@ const DeliveryChallan = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -95,7 +94,7 @@ const DeliveryChallan = () => {
         delivery_date: new Date().toISOString().split('T')[0],
         po_date: '',
         reference_po_no: '',
-        issued_by: user.user._id,
+        issued_by: user?.user?._id || user?._id,
         remarks: '',
         is_invoiced: false,
         products: []
@@ -108,37 +107,37 @@ const DeliveryChallan = () => {
                 setLoading(true);
 
                 // Fetch companies  
-                const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+                const companiesResponse = await fetch(`${import.meta.env.VITE_API_URL}/company`);
                 if (!companiesResponse.ok) throw new Error('Failed to fetch companies');
                 const companiesData = await companiesResponse.json();
                 setCompanies(companiesData);
 
                 // Fetch customers
-                const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+                const customersResponse = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
                 if (!customersResponse.ok) throw new Error('Failed to fetch customers');
                 const customersData = await customersResponse.json();
                 setCustomers(customersData);
 
                 // Fetch sites
-                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/sites`);
+                const sitesResponse = await fetch(`${import.meta.env.VITE_API_URL}/sites`);
                 if (!sitesResponse.ok) throw new Error('Failed to fetch sites');
                 const sitesData = await sitesResponse.json();
                 setSites(sitesData);
 
                 // Fetch calls
-                const callsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`);
+                const callsResponse = await fetch(`${import.meta.env.VITE_API_URL}/calls`);
                 if (!callsResponse.ok) throw new Error('Failed to fetch calls');
                 const callsData = await callsResponse.json();
                 setCalls(callsData.data || callsData);
 
                 // Fetch products
-                const productsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+                const productsResponse = await fetch(`${import.meta.env.VITE_API_URL}/products`);
                 if (!productsResponse.ok) throw new Error('Failed to fetch products');
                 const productsData = await productsResponse.json();
                 setProducts(productsData.data || productsData);
 
                 // Fetch delivery challans
-                const challansResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans`);
+                const challansResponse = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans`);
                 if (!challansResponse.ok) throw new Error('Failed to fetch delivery challans');
                 const challansData = await challansResponse.json();
                 setChallans(challansData);
@@ -241,7 +240,7 @@ const DeliveryChallan = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/delivery-challans`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/delivery-challans`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -604,7 +603,13 @@ const DeliveryChallan = () => {
                                                 <input
                                                     type="text"
                                                     name="issued_by"
-                                                    value={user.user.firstname + " " + user.user.lastname}
+                                                    value={
+                                                        (
+                                                            user?.user
+                                                                ? `${user?.user?.firstname || ""} ${user?.user?.lastname || ""}`
+                                                                : `${user?.firstname || ""} ${user?.lastname || ""}`
+                                                        ).trim()
+                                                    }
                                                     onChange={handleInputChange}
                                                     readOnly
                                                     className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 bg-gray-100 rounded-lg text-sm md:text-base"

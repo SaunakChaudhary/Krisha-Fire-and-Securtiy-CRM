@@ -41,7 +41,7 @@ const AddCompany = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -367,7 +367,7 @@ const AddCompany = () => {
         }
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/company/`, {
                 method: 'POST',
                 body: formDataToSend,
             });

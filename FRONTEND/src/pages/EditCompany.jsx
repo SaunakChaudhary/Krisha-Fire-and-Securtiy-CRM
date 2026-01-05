@@ -42,7 +42,7 @@ const EditCompany = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -151,7 +151,7 @@ const EditCompany = () => {
     const fetchCompany = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/${id}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/company/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch company');
         }
@@ -200,7 +200,7 @@ const EditCompany = () => {
         setSameAsAbove(data.same_as_registered_address || false);
 
         if (data.logo) {
-          const baseApi = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+          const baseApi = import.meta.env.VITE_UPLOAD_URL.replace(/\/$/, '');
           setLogoPreview(`${baseApi}/${data.logo}`);
         }
 
@@ -434,7 +434,7 @@ const EditCompany = () => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/company/${id}`, {
         method: 'PUT',
         body: formDataToSend,
       });

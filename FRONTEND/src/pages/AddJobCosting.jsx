@@ -40,7 +40,7 @@ const AddJobCosting = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -112,13 +112,13 @@ const AddJobCosting = () => {
         const fetchInitialData = async () => {
             try {
                 // Fetch customers
-                const customersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+                const customersRes = await fetch(`${import.meta.env.VITE_API_URL}/customers`);
                 if (!customersRes.ok) throw new Error('Failed to fetch customers');
                 const customersData = await customersRes.json();
                 setCustomers(customersData);
 
                 // Fetch products
-                const productsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+                const productsRes = await fetch(`${import.meta.env.VITE_API_URL}/products`);
                 if (!productsRes.ok) throw new Error('Failed to fetch products');
                 const productsData = await productsRes.json();
                 setProducts(productsData.data || []);
@@ -149,7 +149,7 @@ const AddJobCosting = () => {
             }
 
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites?customer_id=${formData.customer_id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/sites?customer_id=${formData.customer_id}`);
                 if (!response.ok) throw new Error('Failed to fetch sites');
                 const data = await response.json();
                 setSites(data);
@@ -178,7 +178,7 @@ const AddJobCosting = () => {
             }
 
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quotation`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/quotation`);
                 if (!response.ok) throw new Error('Failed to fetch quotations');
                 const data = await response.json();
                 setQuotations(data.data);
@@ -203,7 +203,7 @@ const AddJobCosting = () => {
             }
 
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quotation/${formData.quotation_id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/quotation/${formData.quotation_id}`);
                 if (!response.ok) throw new Error('Failed to fetch quotation details');
                 const quotationData = await response.json();
 
@@ -349,7 +349,7 @@ const AddJobCosting = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job-costing`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/job-costing`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

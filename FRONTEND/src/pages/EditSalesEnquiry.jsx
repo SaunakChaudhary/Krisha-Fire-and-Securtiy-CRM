@@ -41,7 +41,7 @@ const EditSalesEnquiry = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -84,7 +84,7 @@ const EditSalesEnquiry = () => {
 
     useEffect(() => {
         const fetchLead = async () => {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/sourceLead`)
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/category/sourceLead`)
             const data = await response.json();
             if (response.ok) {
                 setLeads(data)
@@ -173,7 +173,7 @@ const EditSalesEnquiry = () => {
             try {
                 setLoading(true);
 
-                const enquiryResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry/${id}`);
+                const enquiryResponse = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry/${id}`);
                 const enquiryData = await enquiryResponse.json();
 
                 const [
@@ -184,12 +184,12 @@ const EditSalesEnquiry = () => {
                     systemsRes,
                     usersRes
                 ] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL}/api/company`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/customers`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/TypeOfWork`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/systems`),
-                    fetch(`${import.meta.env.VITE_API_URL}/api/user`)
+                    fetch(`${import.meta.env.VITE_API_URL}/company`),
+                    fetch(`${import.meta.env.VITE_API_URL}/customers`),
+                    fetch(`${import.meta.env.VITE_API_URL}/sites`),
+                    fetch(`${import.meta.env.VITE_API_URL}/reference-codes/category/TypeOfWork`),
+                    fetch(`${import.meta.env.VITE_API_URL}/systems`),
+                    fetch(`${import.meta.env.VITE_API_URL}/user`)
                 ]);
 
                 const companiesData = await companiesRes.json();
@@ -269,7 +269,7 @@ const EditSalesEnquiry = () => {
                 lostDateTime: formData.lostDateTime ? new Date(formData.lostDateTime) : null
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

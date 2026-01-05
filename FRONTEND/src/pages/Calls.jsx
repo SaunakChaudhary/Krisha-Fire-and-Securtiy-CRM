@@ -40,7 +40,7 @@ const CallList = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -107,7 +107,7 @@ const CallList = () => {
     const fetchCalls = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/calls`, );
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/calls`, );
 
             if (!response.ok) throw new Error('Failed to fetch calls');
             const data = await response.json();

@@ -39,7 +39,7 @@ const System = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -96,14 +96,14 @@ const System = () => {
     'Corrective Maintenance',
     'Equipment',
     'Monitoring Charge',
-    'Preventative Maintenance'
+    'Preventive Maintenance'
   ];
 
   const alarmReportingCategory = ['Intruder', 'Fire', 'CCTV', 'none'];
 
   const fetchSystems = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/systems`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/systems`);
       if (!response.ok) throw new Error('Failed to fetch systems');
       const data = await response.json();
       setSystems(data.systems);
@@ -170,10 +170,10 @@ const System = () => {
     setError(null);
 
     try {
-      const method = currentSystem._id ? 'PATCH' : 'POST';
+      const method = currentSystem._id ? 'PUT' : 'POST';
       const url = currentSystem._id
-        ? `${import.meta.env.VITE_API_URL}/api/systems/${currentSystem._id}`
-        : `${import.meta.env.VITE_API_URL}/api/systems`;
+        ? `${import.meta.env.VITE_API_URL}/systems/${currentSystem._id}`
+        : `${import.meta.env.VITE_API_URL}/systems`;
 
       const response = await fetch(url, {
         method,

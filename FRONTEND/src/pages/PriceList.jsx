@@ -38,7 +38,7 @@ const PriceList = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -92,7 +92,7 @@ const PriceList = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -205,13 +205,9 @@ const PriceList = () => {
       <div className="aspect-w-16 aspect-h-9 bg-gray-50 relative">
         {product.upload_image ? (
           <img
-            src={import.meta.env.VITE_API_URL + "/" + product.upload_image}
+            src={import.meta.env.VITE_UPLOAD_URL + "/" + product.upload_image}
             alt={product.product_name}
             className="w-full h-48 object-cover"
-            onError={(e) => {
-              e.target.src = '/api/placeholder/300/200';
-              e.target.onerror = null;
-            }}
           />
         ) : (
           <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -526,7 +522,7 @@ const PriceList = () => {
                       {product.upload_image ? (
                         <img
                           className="h-20 w-20 rounded-lg object-cover border border-gray-200"
-                          src={import.meta.env.VITE_API_URL + "/" + product.upload_image}
+                          src={import.meta.env.VITE_UPLOAD_URL + "/" + product.upload_image}
                           alt={product.product_name}
                         />
                       ) : (

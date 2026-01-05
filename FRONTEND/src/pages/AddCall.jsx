@@ -41,7 +41,7 @@ const AddCall = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -161,11 +161,11 @@ const AddCall = () => {
                     waitingReasonsData,
                     usersData
                 ] = await Promise.all([
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/sites`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/work-type/`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callReason`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/reference-codes/category/callWaitingReason`),
-                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/api/user`)
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/sites`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/work-type/`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/reference-codes/category/callReason`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/reference-codes/category/callWaitingReason`),
+                    fetchWithErrorHandling(`${import.meta.env.VITE_API_URL}/user`)
                 ]);
 
                 setSites(sitesData.filter(site => site.status === "Live") || []);
@@ -193,7 +193,7 @@ const AddCall = () => {
             const fetchSiteSystems = async () => {
                 try {
                     const siteData = await fetchWithErrorHandling(
-                        `${import.meta.env.VITE_API_URL}/api/sites/${formData.site_id}`
+                        `${import.meta.env.VITE_API_URL}/sites/${formData.site_id}`
                     );
                     setSiteSystems(siteData.site_systems || []);
 
@@ -211,7 +211,7 @@ const AddCall = () => {
             if (formData.call_reason && formData.site_id && formData.site_system) {
                 try {
                     const siteData = await fetchWithErrorHandling(
-                        `${import.meta.env.VITE_API_URL}/api/sites/${formData.site_id}`
+                        `${import.meta.env.VITE_API_URL}/sites/${formData.site_id}`
                     );
 
                     const selectedSystem = siteData.site_systems.find(
@@ -392,7 +392,7 @@ const AddCall = () => {
             };
 
             const response = await fetchWithErrorHandling(
-                `${import.meta.env.VITE_API_URL}/api/calls/create`,
+                `${import.meta.env.VITE_API_URL}/calls/create`,
                 {
                     method: 'POST',
                     headers: {

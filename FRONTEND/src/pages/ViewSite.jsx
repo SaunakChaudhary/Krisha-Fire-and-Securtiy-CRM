@@ -42,7 +42,7 @@ const ViewSite = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -93,7 +93,7 @@ const ViewSite = () => {
         const fetchSiteData = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/${siteId}`);
                 const data = await response.json();
 
                 if (response.ok) {

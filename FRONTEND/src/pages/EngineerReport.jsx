@@ -44,7 +44,7 @@ const EngineerReport = () => {
         if (!accessTypeId) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
             if (response.ok) {
                 const data = await response.json();
                 setPermissions(data);
@@ -102,7 +102,7 @@ const EngineerReport = () => {
                 setLoading(true);
 
                 // Fetch diary entries
-                const diaryResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/diary/entries`);
+                const diaryResponse = await fetch(`${import.meta.env.VITE_API_URL}/diary/entries`);
                 if (!diaryResponse.ok) {
                     throw new Error('Failed to fetch diary entries');
                 }
@@ -126,7 +126,7 @@ const EngineerReport = () => {
                 const taskReportPromises = diaryData.data.map(async (diary) => {
                     try {
                         const taskResponse = await fetch(
-                            `${import.meta.env.VITE_API_URL}/api/taskReport/${diary._id}`
+                            `${import.meta.env.VITE_API_URL}/taskReport/${diary._id}`
                         );
 
                         if (taskResponse.ok) {
@@ -234,7 +234,7 @@ const EngineerReport = () => {
         doc.setFillColor(253, 236, 236);
         doc.rect(0, 0, pageWidth, 40, "F");
 
-        doc.addImage(logoPng, "PNG", 15, 8, 50, 24);
+        doc.addImage(logoPng, "PNG", 15, 8, 60, 24);
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);

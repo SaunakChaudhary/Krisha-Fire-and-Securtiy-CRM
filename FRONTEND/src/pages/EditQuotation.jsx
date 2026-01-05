@@ -8,6 +8,7 @@ import { AuthContext } from "../Context/AuthContext";
 
 const EditQuotation = () => {
   const { user } = useContext(AuthContext);
+  const isHydratedRef = React.useRef(false);
 
   const navigate = useNavigate();
   const [permissions, setPermissions] = useState(null);
@@ -40,7 +41,7 @@ const EditQuotation = () => {
     if (!accessTypeId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/permissions/${accessTypeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions/${accessTypeId}`);
       if (response.ok) {
         const data = await response.json();
         setPermissions(data);
@@ -144,7 +145,7 @@ const EditQuotation = () => {
   // API call to fetch companies
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/company`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/company`);
       if (!response.ok) throw new Error('Failed to fetch companies');
       const data = await response.json();
       setCompanies(data);
@@ -159,7 +160,7 @@ const EditQuotation = () => {
   // API call to fetch systems
   const fetchSystems = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/systems`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/systems`);
       if (!response.ok) throw new Error('Failed to fetch systems');
       const data = await response.json();
       setSystems(data.systems);
@@ -174,7 +175,7 @@ const EditQuotation = () => {
   // API call to fetch products
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
       setProducts(data.data);
@@ -190,7 +191,7 @@ const EditQuotation = () => {
   const fetchCustomersByCompany = async (companyId) => {
     try {
       setLoading(prev => ({ ...prev, customers: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers?company_id=${companyId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/customers?company_id=${companyId}`);
       if (!response.ok) throw new Error('Failed to fetch customers');
       const data = await response.json();
       setCustomers(data);
@@ -206,7 +207,7 @@ const EditQuotation = () => {
   const fetchSitesByCustomer = async (customerId) => {
     try {
       setLoading(prev => ({ ...prev, sites: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites?customer_id=${customerId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites?customer_id=${customerId}`);
       if (!response.ok) throw new Error('Failed to fetch sites');
       const data = await response.json();
       setSites(data);
@@ -222,12 +223,12 @@ const EditQuotation = () => {
   const fetchSalesEnquiriesBySite = async (siteId) => {
     try {
       setLoading(prev => ({ ...prev, salesEnquiries: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sales-enquiry`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sales-enquiry`);
       const data = await response.json();
       const filtered = Array.isArray(data)
         ? data.filter(enquiry => (enquiry.site?._id || enquiry.site) === siteId)
         : [];
-      setSalesEnquiries(filtered);
+      return setSalesEnquiries(filtered);
     } catch (error) {
       console.error('Error fetching sales enquiries:', error);
       toast.error('Failed to load sales enquiries');
@@ -241,7 +242,7 @@ const EditQuotation = () => {
   const fetchSiteSystems = async (siteId) => {
     try {
       setLoading(prev => ({ ...prev, siteSystems: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sites/${siteId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/${siteId}`);
       const site = await response.json();
       const systemsFromSite = Array.isArray(site?.site_systems)
         ? site.site_systems
@@ -263,7 +264,7 @@ const EditQuotation = () => {
   const fetchQuotation = async () => {
     try {
       setLoading(prev => ({ ...prev, initial: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quotation/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/quotation/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -281,7 +282,6 @@ const EditQuotation = () => {
         gst_percent: product.gst_percent || 18,
         installation_gst_percent: product.installation_gst_percent || 18
       }));
-
       setFormData({
         company_id: data.data.company_id?._id || "",
         customer_id: data.data.customer_id?._id || "",
@@ -302,6 +302,7 @@ const EditQuotation = () => {
         product_details: transformedProducts
       });
 
+      isHydratedRef.current = true;
       // If company is set, fetch its customers
       if (data.data.company_id?._id) {
         await fetchCustomersByCompany(data.data.company_id._id);
@@ -333,7 +334,7 @@ const EditQuotation = () => {
   const updateQuotation = async (quotationData) => {
     try {
       setLoading(prev => ({ ...prev, submitting: true }));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/quotation/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/quotation/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -536,70 +537,38 @@ const EditQuotation = () => {
 
   // Fetch initial data on component mount
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const init = async () => {
+      setLoading(prev => ({ ...prev, initial: true }));
+
       await Promise.all([
         fetchCompanies(),
         fetchSystems(),
-        fetchProducts()
+        fetchProducts(),
       ]);
-      await fetchQuotation();
+
+      await fetchQuotation(); // ← WAIT for this
+
+      setLoading(prev => ({ ...prev, initial: false }));
     };
 
-    fetchInitialData();
+    init();
   }, [id]);
 
   // Fetch customers when company is selected
   useEffect(() => {
-    if (formData.company_id) {
-      fetchCustomersByCompany(formData.company_id);
-      // Reset customer and site when company changes
-      if (formData.customer_id) {
-        setFormData(prev => ({
-          ...prev,
-          customer_id: "",
-          site_id: "",
-          sales_enquiry_id: "",
-          system_details: ""
-        }));
-      }
-      setSalesEnquiries([]);
-      setSiteSystems([]);
-    }
-  }, [formData.company_id]);
+  if (formData.company_id) fetchCustomersByCompany(formData.company_id);
+}, [formData.company_id]);
 
-  // Fetch sites when customer is selected
-  useEffect(() => {
-    if (formData.customer_id) {
-      fetchSitesByCustomer(formData.customer_id);
-      // Reset site when customer changes
-      if (formData.site_id) {
-        setFormData(prev => ({
-          ...prev,
-          site_id: "",
-          sales_enquiry_id: "",
-          system_details: ""
-        }));
-      }
-      setSalesEnquiries([]);
-      setSiteSystems([]);
-    }
-  }, [formData.customer_id]);
+useEffect(() => {
+  if (formData.customer_id) fetchSitesByCustomer(formData.customer_id);
+}, [formData.customer_id]);
 
-  // Fetch dependent data when site changes
-  useEffect(() => {
-    if (formData.site_id) {
-      fetchSalesEnquiriesBySite(formData.site_id);
-      fetchSiteSystems(formData.site_id);
-      setFormData(prev => ({
-        ...prev,
-        sales_enquiry_id: "",
-        system_details: ""
-      }));
-    } else {
-      setSalesEnquiries([]);
-      setSiteSystems([]);
-    }
-  }, [formData.site_id]);
+useEffect(() => {
+  if (formData.site_id) {
+    fetchSalesEnquiriesBySite(formData.site_id);
+    fetchSiteSystems(formData.site_id);
+  }
+}, [formData.site_id]);
 
   // Recalculate amounts when relevant fields change
   useEffect(() => {
@@ -634,7 +603,6 @@ const EditQuotation = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -1016,12 +984,12 @@ const EditQuotation = () => {
                                     )}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.quantity}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.price.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.price || product.price?.toFixed(2)}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.gst_percent}%</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.total_amount.toFixed(2)}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_price.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.total_amount != null ? Number(product.total_amount).toFixed(2) : "--"}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_price != null ? Number(product.installation_price).toFixed(2) : "--"}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_gst_percent}%</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_amount.toFixed(2)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{product.installation_amount != null ? Number(product.installation_amount).toFixed(2) : "--"}</td>
                                   <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                                     <button
                                       onClick={() => removeProduct(product.id)}
@@ -1090,7 +1058,7 @@ const EditQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Price:</span>
-                                  <span className="ml-1">{product.price.toFixed(2)}</span>
+                                  <span className="ml-1">{product.price != null ? Number(product.price).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">GST:</span>
@@ -1098,11 +1066,11 @@ const EditQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Amount:</span>
-                                  <span className="ml-1">{product.total_amount.toFixed(2)}</span>
+                                  <span className="ml-1">{product.total_amount != null ? Number(product.total_amount).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. Price:</span>
-                                  <span className="ml-1">{product.installation_price.toFixed(2)}</span>
+                                  <span className="ml-1"> {product.installation_price != null ? Number(product.installation_price).toFixed(2) : "--"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. GST:</span>
@@ -1110,7 +1078,7 @@ const EditQuotation = () => {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Inst. Amount:</span>
-                                  <span className="ml-1">{product.installation_amount.toFixed(2)}</span>
+                                  <span className="ml-1"> {product.installation_amount != null ? Number(product.installation_amount).toFixed(2) : "--"}</span>
                                 </div>
                               </div>
                             </div>
