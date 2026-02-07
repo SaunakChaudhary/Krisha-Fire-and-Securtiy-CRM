@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
                     "engineerData",
                     JSON.stringify(userData.engineerData)
                 );
-
                 setUser(userData);
             }
         } catch (err) {

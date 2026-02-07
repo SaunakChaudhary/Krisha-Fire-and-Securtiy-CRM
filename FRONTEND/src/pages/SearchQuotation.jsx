@@ -476,7 +476,7 @@ const ManageQuotation = () => {
         let y = startY;
         y = checkPageOverflow(y, 100);
 
-        currentPage.drawText("Bill To:", {
+        currentPage.drawText("Customer :", {
           x: margin,
           y: pageHeight - y,
           size: 12,

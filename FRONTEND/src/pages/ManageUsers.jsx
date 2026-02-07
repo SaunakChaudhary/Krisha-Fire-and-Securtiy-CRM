@@ -116,7 +116,9 @@ const ManageUsers = () => {
             });
 
             setUsers(processedUsers.filter(user => user.accesstype != "Super Admin"));
-            setAccessTypes(Array.from(accessTypeSet).map(str => JSON.parse(str)));
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/access-types`);
+            const data1 = await res.json();
+            setAccessTypes(data1);
         } catch (error) {
             console.error('Error fetching users:', error);
             setFetchError(error.message || 'Failed to load users. Please try again later.');

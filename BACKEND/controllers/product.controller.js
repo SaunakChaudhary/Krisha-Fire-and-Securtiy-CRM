@@ -58,7 +58,6 @@ exports.createProduct = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
-    const skip = (page - 1) * limit;
 
     let query = {};
 
@@ -73,8 +72,6 @@ exports.getAllProducts = async (req, res) => {
     }
 
     const products = await Product.find(query)
-      .skip(skip)
-      .limit(parseInt(limit))
       .populate("manufacturer", "code description name")
       .populate("product_group", "code description name")
       .populate("preferred_supplier", "name code");

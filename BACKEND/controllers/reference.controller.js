@@ -23,12 +23,20 @@ exports.createReferenceCode = async (req, res) => {
 exports.updateReferenceCode = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, isActive, updatedBy } = req.body;
+    const { name, code, description, isActive, updatedBy } = req.body;
+    
+    const check1 = await ReferenceCode.findById(id);
+    const check2 = await ReferenceCode.find({code});
+
+    if (check1.code !== code && check2.length > 0) {
+      return res.status(400).json({ error: "Reference Code already exists" });
+    }
 
     const updated = await ReferenceCode.findByIdAndUpdate(
       id,
       {
         ...(name && { name }),
+        ...(code && { code }),
         ...(description && { description }),
         ...(typeof isActive === "boolean" && { isActive }),
         ...(updatedBy && { updatedBy }),
@@ -54,6 +62,20 @@ exports.getByCategory = async (req, res) => {
     const codes = await ReferenceCode.find({ category });
 
     res.status(200).json(codes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteReferenceCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await ReferenceCode.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Reference Code not found" });
+    }
+    res.status(200).json({ message: "Reference Code deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -74,6 +74,10 @@ import DiaryCalendar from './pages/DiaryCalendar'
 import CustomerDocuments from './pages/CustomerDocuments'
 import Calender from './pages/Engineer/Calender'
 
+const res = await fetch(`${import.meta.env.VITE_API_URL}/access-types`);
+const data1 = await res.json();
+const arr = data1.map(name => name.name)
+arr.push("Super Admin");
 const App = () => {
   return (
     <Routes>
@@ -82,7 +86,7 @@ const App = () => {
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/UserUnAuthorized/:page" element={<UserUnAuthorised />} />
 
-      <Route element={<ProtectedRoute allowedRoles={["Super Admin", "Sales"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={arr} />}>
         <Route path="/dashboard" element={<Dashboard />} />
 
         {/* Company Information */}

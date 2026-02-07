@@ -496,7 +496,7 @@ const AddSupplier = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">GST No.</label>
+                                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">GST No.*</label>
                                             <input
                                                 type="text"
                                                 name="gstNo"

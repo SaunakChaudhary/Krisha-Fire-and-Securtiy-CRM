@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { ChevronDown, Plus, Edit, Trash2 } from 'lucide-react';
+import { ChevronDown, Plus, Edit, Trash2, Delete } from 'lucide-react';
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 const ReferenceCode = () => {
     const { user } = useContext(AuthContext);
@@ -120,6 +121,23 @@ const ReferenceCode = () => {
         const { name, value } = e.target;
         setNewReference(prev => ({ ...prev, [name]: value }));
     };
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this reference code?')) return;
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/reference-codes/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) throw new Error('Failed to delete reference code');
+
+            setReferenceList(prev => prev.filter(item => item._id !== id));
+        }
+        catch (err) {
+            console.error(err);
+            toast.error('Error deleting reference code');
+        }
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -146,6 +164,10 @@ const ReferenceCode = () => {
                         category: selectedCategory,
                     })
                 });
+            }
+
+            if (res.status == 400) {
+                toast.error('Reference Code already exists');
             }
 
             if (!res.ok) throw new Error(isEditing ? 'Failed to update reference' : 'Failed to add reference');
@@ -249,6 +271,12 @@ const ReferenceCode = () => {
                                                     >
                                                         <Edit size={16} />
                                                     </button>
+                                                    {/* <button
+                                                        onClick={() => handleDelete(item._id)}
+                                                        className="text-red-600 hover:text-red-900 mr-3"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button> */}
                                                 </td>
                                             </tr>
                                         ))}

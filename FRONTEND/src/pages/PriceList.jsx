@@ -235,8 +235,8 @@ const PriceList = () => {
         )}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Unit</p>
-            <p className="font-medium text-gray-900">{product.unit}</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Units</p>
+            <p className="font-medium text-gray-900">{product.units}</p>
           </div>
           {product.GST && (
             <div>
@@ -552,7 +552,7 @@ const PriceList = () => {
                       )}
                       <div className="mt-2 text-sm text-gray-600 space-y-1">
                         <div><span className="font-medium">Code:</span> {product.product_code}</div>
-                        <div><span className="font-medium">Unit:</span> {product.unit}</div>
+                        <div><span className="font-medium">Units:</span> {product.units}</div>
                         {product.HSN_No && <div><span className="font-medium">HSN:</span> {product.HSN_No}</div>}
                         {product.GST && <div><span className="font-medium">GST:</span> {product.GST}%</div>}
                         <div><span className="font-medium">Purchase:</span> {product.purchase_cost ? `₹${product.purchase_cost.toLocaleString()}` : 'N/A'}</div>
