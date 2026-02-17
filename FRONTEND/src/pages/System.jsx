@@ -96,7 +96,7 @@ const System = () => {
     'Corrective Maintenance',
     'Equipment',
     'Monitoring Charge',
-    'Preventive Maintenance'
+    'Preventative Maintenance'
   ];
 
   const alarmReportingCategory = ['Intruder', 'Fire', 'CCTV', 'none'];
@@ -464,7 +464,7 @@ const System = () => {
                         required
                       >
                         {productFilterGroups.map(group => (
-                          <option key={group} value={group}>{group}</option>
+                          <option key={group} value={group}>{group=="Preventative Maintenance" ? "Preventive Maintenance" : group}</option>
                         ))}
                       </select>
                     </div>

@@ -8,6 +8,7 @@ const {
   deleteProduct,
   getProductsByStatus,
   getProductsByManufacturer,
+  importProducts
 } = require("../controllers/product.controller");
 const { upload } = require("../middleware/upload.js");
 
@@ -18,5 +19,6 @@ router.put("/:id", upload.single("upload_image"), updateProduct);
 router.delete("/:id", deleteProduct);
 router.get("/:id/status", getProductsByStatus);
 router.get("/:id/manufacturer", getProductsByManufacturer);
+router.post("/import", importProducts);
 
 module.exports = router;

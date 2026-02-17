@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp, Upload, LucideUpload, Files } from 'lucide-react';
+import { Search, User, MapPin, Phone, Mail, Edit, Trash2, Eye, ChevronDown, ChevronUp, Upload, LucideUpload, Files, Download } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from "../Context/AuthContext";
@@ -218,6 +218,119 @@ const CustomerSearch = () => {
         reader.readAsArrayBuffer(file);
     };
 
+    const handleExport = (customers) => {
+        if (!customers || !customers.length) return;
+
+        const headers = [
+            "customer_name",
+            "GST_No",
+            "GST_Exempt",
+            "company_id",
+            "status",
+            "Title",
+            "Contact_person",
+            "contact_person_secondary",
+            "contact_person_designation",
+            "contact_person_email",
+            "contact_person_mobile",
+            "address_line1",
+            "address_line2",
+            "address_line3",
+            "address_line4",
+            "city",
+            "state",
+            "country",
+            "postcode",
+            "email",
+            "telephone_no",
+            "mobile_no",
+            "bank_name",
+            "account_number",
+            "IFSC",
+            "bank_address",
+            "Payment_method",
+            "currency",
+            "credit_limit",
+            "credit_days",
+            "creditCharge",
+            "credit_withdrawn",
+            "payment_due_EOM_Terms",
+            "lead_source",
+            "industry_type",
+            "pan_no",
+        ];
+
+        const escape = (value) => {
+            if (value === null || value === undefined) return "";
+            const str = String(value);
+            return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+        };
+
+        const rows = customers.map((c) => {
+            const address = c.address || {};
+
+            return [
+                c.customer_name,
+                c.GST_No,
+                c.GST_Exempt,
+                c.company_id?.company_name || c.company_id?._id || "",
+                c.status,
+                c.Title,
+                c.Contact_person,
+                c.contact_person_secondary,
+                c.contact_person_designation,
+                c.contact_person_email,
+                c.contact_person_mobile,
+
+                // ✅ FIXED ADDRESS MAPPING
+                address.line1,
+                address.line2,
+                address.line3,
+                address.line4,
+                address.city,
+                address.state,
+                address.country,
+                address.postcode,
+                c.email,
+                c.telephone_no,
+                c.mobile_no,
+                c.bank_name,
+                c.account_number,
+                c.IFSC,
+                c.bank_address,
+                c.Payment_method,
+                c.currency,
+                c.credit_limit,
+                c.credit_days,
+                c.creditCharge,
+                c.credit_withdrawn,
+                c.payment_due_EOM_Terms,
+                c.lead_source,
+                c.industry_type,
+                c.pan_no,
+            ]
+                .map(escape)
+                .join(",");
+        });
+
+        const csv =
+            "\uFEFF" + // Excel UTF-8 BOM
+            [headers.join(","), ...rows].join("\n");
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "customers.xlsx";
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    console.log(customers)
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -268,6 +381,22 @@ const CustomerSearch = () => {
                                         className="hidden"
                                     />
                                 </div>
+                                <button
+                                    onClick={() => handleExport(customers)}
+                                    type="button"
+                                    className="
+        inline-flex items-center gap-2
+        rounded-md border border-slate-300
+        bg-white px-4 py-2
+        text-sm font-medium text-slate-700
+        hover:bg-slate-50
+        focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2
+        disabled:cursor-not-allowed disabled:opacity-50
+      "
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Export CSV
+                                </button>
                             </div>
                         </div>
 

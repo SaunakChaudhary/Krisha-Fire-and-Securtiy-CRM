@@ -2,6 +2,8 @@ const Product = require("../models/product.model");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const ReferenceCode = require("../models/reference.model");
+const Supplier = require("../models/supplier.model");
 
 // Create Product
 exports.createProduct = async (req, res) => {
@@ -183,7 +185,7 @@ exports.updateProduct = async (req, res) => {
         const oldPath = path.join(
           __dirname,
           "..",
-          existingProduct.upload_image
+          existingProduct.upload_image,
         );
 
         if (fs.existsSync(oldPath)) {
@@ -318,6 +320,119 @@ exports.getProductsByManufacturer = async (req, res) => {
       success: false,
       message: "Internal server error",
       error: error.message,
+    });
+  }
+};
+
+exports.importProducts = async (req, res) => {
+  try {
+    const { products } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({
+        message: "No product data received",
+      });
+    }
+
+    // Preload reference data (performance improvement)
+    const manufacturers = await ReferenceCode.find({});
+    const productGroups = await ReferenceCode.find({});
+    const suppliers = await Supplier.find({});
+
+    const manufacturerMap = {};
+    const productGroupMap = {};
+    const supplierMap = {};
+
+    manufacturers.forEach((m) => (manufacturerMap[m.code] = m._id));
+    productGroups.forEach((g) => (productGroupMap[g.code] = g._id));
+    suppliers.forEach((s) => (supplierMap[s.supplierCode] = s._id));
+
+    const validProducts = [];
+    const skipped = [];
+
+    for (const row of products) {
+      // REQUIRED FIELD CHECK
+      if (!row.product_code || !row.product_name || !row.unit) {
+        skipped.push({
+          product_code: row.product_code,
+          reason: "Missing required fields",
+        });
+        continue;
+      }
+
+      validProducts.push({
+        product_code: row.product_code,
+        product_name: row.product_name,
+        HSN_No: row.HSN_No || null,
+        SAC_NO: row.SAC_NO || null,
+
+        manufacturer: manufacturerMap[row.manufacturer_code] || null,
+        product_group: productGroupMap[row.product_group_code] || null,
+        preferred_supplier: supplierMap[row.preferred_supplier_code] || null,
+
+        specifications: row.specifications || null,
+        unit: row.unit,
+
+        GST: row.GST || 0,
+        installation_GST: row.installation_GST || 0,
+
+        obsolete_product: !!row.obsolete_product,
+
+        units: row.units || 0,
+        unit_description: row.unit_description || null,
+
+        purchase_cost: row.purchase_cost || 0,
+        average_cost: row.average_cost || 0,
+        standard_cost: row.standard_cost || 0,
+
+        standard_sale: row.standard_sale || 0,
+        installation_sale: row.installation_sale || 0,
+        maintenance_sale: row.maintenance_sale || 0,
+        other_sale: row.other_sale || 0,
+
+        labour_hours: row.labour_hours || 0,
+        maintenance_hours: row.maintenance_hours || 0,
+        commission_hours: row.commission_hours || 0,
+
+        basic_specification_text: row.basic_specification_text || null,
+        detailed_specification_text: row.detailed_specification_text || null,
+
+        upload_image: "", // blank as requested
+      });
+    }
+
+    if (!validProducts.length) {
+      return res.status(400).json({
+        message: "No valid products to import",
+        skipped,
+      });
+    }
+
+    // BULK INSERT (unordered → duplicates won’t break import)
+    const inserted = await Product.insertMany(validProducts, {
+      ordered: false,
+    });
+
+    return res.json({
+      message: "Import completed",
+      insertedCount: inserted.length,
+      skippedCount: skipped.length,
+      skipped,
+    });
+  } catch (err) {
+    console.error("IMPORT ERROR:", err.message);
+
+    // Duplicate key handling
+    if (err.code === 11000) {
+      return res.status(409).json({
+        message: "Duplicate product_code detected",
+        error: err.keyValue,
+      });
+    }
+
+    res.status(500).json({
+      message: "Product import failed",
+      error: err.message,
     });
   }
 };
