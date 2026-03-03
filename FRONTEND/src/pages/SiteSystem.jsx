@@ -553,6 +553,7 @@ const SiteSystem = () => {
                                                     >
                                                         <option value="">-- Select Frequency --</option>
                                                         <option value="Monthly">Monthly</option>
+                                                        <option value="Bi-Monthly">Bi-Monthly</option>
                                                         <option value="Quarterly">Quarterly</option>
                                                         <option value="Half-Yearly">Half-Yearly</option>
                                                         <option value="Yearly">Yearly</option>

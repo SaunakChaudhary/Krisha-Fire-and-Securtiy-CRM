@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 const DiaryCalendar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [events, setEvents] = useState([]);
+  const [systemDetails, setSystemDetails] = useState([]);
   const navigate = useNavigate();
 
   const getNextServiceDates = (startDate, endDate, frequency) => {
@@ -21,6 +22,9 @@ const DiaryCalendar = () => {
     switch (frequency) {
       case "Monthly":
         monthsToAdd = 1;
+        break;
+      case "Bi-Monthly":
+        monthsToAdd = 2;
         break;
       case "Quarterly":
         monthsToAdd = 3;
@@ -43,6 +47,19 @@ const DiaryCalendar = () => {
     }
 
     return dates;
+  };
+
+  const getSystemDetails = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/systems`);
+      if (!res.ok) throw new Error("Failed to fetch system details");
+
+      const data = await res.json();
+      setSystemDetails(data.systems);
+    } catch (err) {
+      console.error("System fetch error:", err);
+      return null;
+    }
   };
 
   const fetchCalendarData = async () => {
@@ -73,14 +90,13 @@ const DiaryCalendar = () => {
             const serviceDates = getNextServiceDates(
               system.amc_start_date,
               system.amc_end_date,
-              system.frequency
+              system.frequency,
             );
-
 
             serviceDates.forEach((date, index) => {
               amcEvents.push({
                 id: `${site._id}-${system._id}-${index}`,
-                title: `Next Service (${system.frequency}) - ${site.site_code}`,
+                title: `Next Service (${system.frequency}) - ${site.site_code} (${site.site_name}) - ${systemDetails.find(s => s._id === system.system_id)?.systemName || ""}`,
                 start: date.toISOString().split("T")[0],
                 allDay: true,
                 backgroundColor: "#16a34a",
@@ -102,10 +118,17 @@ const DiaryCalendar = () => {
       console.error("Calendar fetch error:", err);
     }
   };
-
-  useEffect(() => {
+useEffect(() => {
+  getSystemDetails();
+}, []);
+useEffect(() => {
+  if (systemDetails.length > 0) {
     fetchCalendarData();
-  }, []);
+  }
+}, [systemDetails]);
+
+
+
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

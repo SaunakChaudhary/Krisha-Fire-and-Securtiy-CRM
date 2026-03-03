@@ -12,7 +12,10 @@ const customerDocumentSchema = new mongoose.Schema({
   file_path: { type: String, required: true },     // uploads/customers/...
   file_type: { type: String },                     // pdf, jpg, png
   file_size: { type: Number },
-
+folder_name: {
+  type: String,
+  default: "General",
+},
   uploaded_at: {
     type: Date,
     default: Date.now,

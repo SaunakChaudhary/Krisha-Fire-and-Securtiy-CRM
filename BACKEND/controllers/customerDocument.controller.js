@@ -16,6 +16,7 @@ const uploadCustomerDocument = async (req, res) => {
     const document = await CustomerDocument.create({
       customer_id: customerId,
       document_name: req.body.document_name || req.file.originalname,
+      folder_name: req.body.folder_name || "General",
       file_name: req.file.filename,
       file_path: req.file.path,
       file_type: req.file.mimetype,
@@ -28,14 +29,20 @@ const uploadCustomerDocument = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 const getCustomerDocuments = async (req, res) => {
   try {
     const { customerId } = req.params;
+    const { folder } = req.query;
 
-    const documents = await CustomerDocument.find({
-      customer_id: customerId,
-    }).sort({ uploaded_at: -1 });
+    const query = { customer_id: customerId };
+
+    if (folder) {
+      query.folder_name = folder;
+    }
+
+    const documents = await CustomerDocument.find(query).sort({
+      uploaded_at: -1,
+    });
 
     res.json(documents);
   } catch (error) {
