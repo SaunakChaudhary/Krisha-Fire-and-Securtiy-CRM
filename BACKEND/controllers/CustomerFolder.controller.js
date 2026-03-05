@@ -6,7 +6,7 @@ const CustomerDocument = require("../models/customerDocument.model");
 const createFolder = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { folder_name } = req.body;
+    const { folder_name, parent_folder } = req.body;
 
     if (!folder_name) {
       return res.status(400).json({ error: "Folder name required" });
@@ -27,7 +27,7 @@ const createFolder = async (req, res) => {
       "uploads",
       "customers",
       customerId,
-      folder_name
+      folder_name,
     );
 
     fs.mkdirSync(folderPath, { recursive: true });
@@ -35,6 +35,7 @@ const createFolder = async (req, res) => {
     const folder = await CustomerFolder.create({
       customer_id: customerId,
       folder_name,
+      parent_folder: parent_folder || null,
     });
 
     res.status(201).json(folder);
@@ -45,13 +46,27 @@ const createFolder = async (req, res) => {
 
 const getFolders = async (req, res) => {
   const { customerId } = req.params;
-  const folders = await CustomerFolder.find({ customer_id: customerId });
+  const { parent } = req.query;
+
+  const query = {
+    customer_id: customerId,
+    parent_folder: parent || null,
+  };
+
+  const folders = await CustomerFolder.find(query);
+
   res.json(folders);
 };
+
+const mongoose = require("mongoose");
 
 const deleteFolder = async (req, res) => {
   try {
     const { customerId, folderId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(folderId)) {
+      return res.status(400).json({ error: "Invalid folder ID" });
+    }
 
     const folder = await CustomerFolder.findById(folderId);
 
@@ -59,29 +74,37 @@ const deleteFolder = async (req, res) => {
       return res.status(404).json({ error: "Folder not found" });
     }
 
-    // Check if folder belongs to that customer
-    if (folder.customer_id.toString() !== customerId) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
+    /* ---------- CHECK SUBFOLDERS ---------- */
 
-    // Check if documents exist inside folder
-    const documentsCount = await CustomerDocument.countDocuments({
-      customer_id: customerId,
-      folder_name: folder.folder_name,
+    const subFolderCount = await CustomerFolder.countDocuments({
+      parent_folder: folderId,
     });
 
-    if (documentsCount > 0) {
+    if (subFolderCount > 0) {
       return res.status(400).json({
-        error: "Folder is not empty. Delete documents first.",
+        error: "Folder contains subfolders. Delete them first.",
       });
     }
 
-    // Delete physical folder
+    /* ---------- CHECK DOCUMENTS ---------- */
+
+    const documentCount = await CustomerDocument.countDocuments({
+      folder_id: folderId,
+    });
+
+    if (documentCount > 0) {
+      return res.status(400).json({
+        error: "Folder contains documents. Delete them first.",
+      });
+    }
+
+    /* ---------- DELETE PHYSICAL FOLDER ---------- */
+
     const folderPath = path.join(
       "uploads",
       "customers",
       customerId,
-      folder.folder_name
+      folder.folder_name,
     );
 
     if (fs.existsSync(folderPath)) {
@@ -92,6 +115,7 @@ const deleteFolder = async (req, res) => {
 
     res.json({ message: "Folder deleted successfully" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -128,14 +152,14 @@ const renameFolder = async (req, res) => {
       "uploads",
       "customers",
       customerId,
-      folder.folder_name
+      folder.folder_name,
     );
 
     const newFolderPath = path.join(
       "uploads",
       "customers",
       customerId,
-      new_name
+      new_name,
     );
 
     // Rename physical folder
@@ -149,7 +173,7 @@ const renameFolder = async (req, res) => {
         customer_id: customerId,
         folder_name: folder.folder_name,
       },
-      { folder_name: new_name }
+      { folder_name: new_name },
     );
 
     // Update folder collection
@@ -157,10 +181,9 @@ const renameFolder = async (req, res) => {
     await folder.save();
 
     res.json({ message: "Folder renamed successfully" });
-
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
 };
 
-module.exports = { createFolder, getFolders, deleteFolder , renameFolder};
+module.exports = { createFolder, getFolders, deleteFolder, renameFolder };

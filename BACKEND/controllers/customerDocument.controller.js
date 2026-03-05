@@ -16,7 +16,7 @@ const uploadCustomerDocument = async (req, res) => {
     const document = await CustomerDocument.create({
       customer_id: customerId,
       document_name: req.body.document_name || req.file.originalname,
-      folder_name: req.body.folder_name || "General",
+      folder_id: req.body.folder_id,
       file_name: req.file.filename,
       file_path: req.file.path,
       file_type: req.file.mimetype,
@@ -32,24 +32,23 @@ const uploadCustomerDocument = async (req, res) => {
 const getCustomerDocuments = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { folder } = req.query;
+    const { folderId } = req.query;
 
-    const query = { customer_id: customerId };
-
-    if (folder) {
-      query.folder_name = folder;
+    if (!folderId || !mongoose.Types.ObjectId.isValid(folderId)) {
+      return res.json([]);
     }
 
-    const documents = await CustomerDocument.find(query).sort({
-      uploaded_at: -1,
-    });
+    const documents = await CustomerDocument.find({
+      customer_id: customerId,
+      folder_id: new mongoose.Types.ObjectId(folderId),
+    }).sort({ uploaded_at: -1 });
 
     res.json(documents);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 const fs = require("fs");
 
 const deleteCustomerDocument = async (req, res) => {

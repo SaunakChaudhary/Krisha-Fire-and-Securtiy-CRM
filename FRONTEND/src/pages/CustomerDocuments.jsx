@@ -5,448 +5,444 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../Context/AuthContext";
 
 const CustomerDocuments = () => {
-    const { customerId } = useParams();
-    const { user } = useContext(AuthContext);
-    const navigate = useNavigate();
+  const { customerId } = useParams();
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const API = import.meta.env.VITE_API_URL;
+  const API = import.meta.env.VITE_API_URL;
 
-    const [permissions, setPermissions] = useState(null);
-    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [permissions, setPermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
-    const [folders, setFolders] = useState([]);
-    const [currentFolder, setCurrentFolder] = useState(null);
+  const [folders, setFolders] = useState([]);
+  const [currentFolder, setCurrentFolder] = useState(null);
+  const [breadcrumb, setBreadcrumb] = useState([]);
 
-    const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments] = useState([]);
 
-    const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [file, setFile] = useState(null);
+  const [documentName, setDocumentName] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const [file, setFile] = useState(null);
-    const [documentName, setDocumentName] = useState("");
-    const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+  /* ---------------- PERMISSIONS ---------------- */
 
-    /* ---------------- PERMISSIONS ---------------- */
+  const getAccessTypeId = () => {
+    if (!user) return null;
+    if (user.user?.accesstype_id) return user.user.accesstype_id;
+    if (user.accesstype_id?._id) return user.accesstype_id._id;
+    if (typeof user.accesstype_id === "string") return user.accesstype_id;
+    return null;
+  };
 
-    const getAccessTypeId = () => {
-        if (!user) return null;
+  const fetchPermissions = async () => {
+    const accessTypeId = getAccessTypeId();
+    if (!accessTypeId) return;
 
-        if (user.user && user.user.accesstype_id)
-            return user.user.accesstype_id;
+    try {
+      const res = await fetch(`${API}/permissions/${accessTypeId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPermissions(data);
+      }
+    } finally {
+      setPermissionsLoaded(true);
+    }
+  };
 
-        if (user.accesstype_id && user.accesstype_id._id)
-            return user.accesstype_id._id;
+  useEffect(() => {
+    if (user) fetchPermissions();
+  }, [user]);
 
-        if (typeof user.accesstype_id === "string")
-            return user.accesstype_id;
+  useEffect(() => {
+    if (permissionsLoaded && !permissions?.permissions?.["Manage Customer"]) {
+      navigate("/UserUnAuthorized/Manage Customer");
+    }
+  }, [permissionsLoaded]);
 
-        return null;
-    };
+  /* ---------------- FOLDER LOGIC ---------------- */
 
-    const fetchPermissions = async () => {
-        const accessTypeId = getAccessTypeId();
-        if (!accessTypeId) return;
+  const fetchFolders = async (parentId = null) => {
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/folders?parent=${parentId || ""
+        }`
+      );
+      const data = await res.json();
+      setFolders(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-        try {
-            const res = await fetch(`${API}/permissions/${accessTypeId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setPermissions(data);
-            }
-            setPermissionsLoaded(true);
-        } catch {
-            setPermissionsLoaded(true);
+  useEffect(() => {
+    fetchFolders(currentFolder?._id || null);
+  }, [currentFolder]);
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return alert("Enter folder name");
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/folders`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            folder_name: newFolderName,
+            parent_folder: currentFolder?._id || null,
+          }),
         }
-    };
+      );
 
-    useEffect(() => {
-        if (user) fetchPermissions();
-    }, [user]);
+      if (!res.ok) throw new Error();
 
-    const hasPermission = (moduleName) =>
-        permissions?.permissions?.[moduleName] === true;
+      setNewFolderName("");
+      fetchFolders(currentFolder?._id || null);
+    } catch {
+      alert("Folder creation failed");
+    }
+  };
 
-    useEffect(() => {
-        if (permissionsLoaded && !hasPermission("Manage Customer")) {
-            navigate("/UserUnAuthorized/Manage Customer");
+  const handleDeleteFolder = async (folderId) => {
+    if (!window.confirm("Delete this folder?")) return;
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/folders/${folderId}`,
+        { method: "DELETE" }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Delete failed");
+        return;
+      }
+
+      fetchFolders(currentFolder?._id || null);
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  const handleRenameFolder = async (folder) => {
+    const newName = prompt("Enter new folder name", folder.folder_name);
+    if (!newName || newName === folder.folder_name) return;
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/folders/${folder._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_name: newName }),
         }
-    }, [permissionsLoaded]);
+      );
 
-    /* ---------------- FOLDER LOGIC ---------------- */
+      const data = await res.json();
 
-    const fetchFolders = async () => {
-        try {
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/folders`
-            );
-            const data = await res.json();
-            setFolders(data);
-        } catch (err) {
-            console.error("Folder fetch error:", err);
+      if (!res.ok) {
+        alert(data.error || "Rename failed");
+        return;
+      }
+
+      fetchFolders(currentFolder?._id || null);
+
+      if (currentFolder?._id === folder._id) {
+        setCurrentFolder({ ...folder, folder_name: newName });
+      }
+    } catch {
+      alert("Rename failed");
+    }
+  };
+
+  /* ---------------- DOCUMENT LOGIC ---------------- */
+
+  const fetchDocuments = async () => {
+    if (!currentFolder) {
+      setDocuments([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/documents?folderId=${currentFolder._id}`
+      );
+      const data = await res.json();
+      setDocuments(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [currentFolder]);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+
+    if (!currentFolder) return alert("Select folder first");
+    if (!file) return alert("Select file");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("document_name", documentName);
+    formData.append("folder_id", currentFolder._id);
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/documents`,
+        {
+          method: "POST",
+          body: formData,
         }
-    };
+      );
 
-    useEffect(() => {
-        fetchFolders();
-    }, [customerId]);
+      if (!res.ok) throw new Error();
 
-    const handleCreateFolder = async () => {
-        if (!newFolderName.trim()) {
-            alert("Enter folder name");
-            return;
+      setFile(null);
+      setDocumentName("");
+      fetchDocuments();
+    } catch {
+      alert("Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (id) => {
+    if (!window.confirm("Delete document?")) return;
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/documents/${id}`,
+        { method: "DELETE" }
+      );
+
+      if (!res.ok) throw new Error();
+
+      fetchDocuments();
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  const createSubFolder = async () => {
+    const name = prompt("Enter folder name");
+    if (!name) return;
+
+    try {
+      const res = await fetch(
+        `${API}/customer-document/customers/${customerId}/folders`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            folder_name: name,
+            parent_folder: currentFolder?._id || null,
+          }),
         }
+      );
 
-        try {
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/folders`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ folder_name: newFolderName }),
-                }
-            );
+      if (!res.ok) throw new Error();
 
-            if (!res.ok) throw new Error();
+      fetchFolders(currentFolder?._id || null);
+    } catch {
+      alert("Folder creation failed");
+    }
+  };
+  /* ---------------- UI ---------------- */
 
-            setNewFolderName("");
-            fetchFolders();
-        } catch {
-            alert("Folder creation failed");
-        }
-    };
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-    /* ---------------- DOCUMENT LOGIC ---------------- */
+      <div className="flex">
+        <Sidebar
+          isOpen={sidebarOpen}
+          toggleSidebar={() => setSidebarOpen(false)}
+        />
 
-    const fetchDocuments = async () => {
-        if (!currentFolder) {
-            setDocuments([]);
-            return;
-        }
+        <main className="flex-1 mt-20 sm:mt-24 lg:ml-64 p-4">
 
-        try {
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/documents?folder=${currentFolder}`
-            );
-            const data = await res.json();
-            setDocuments(data);
-        } catch (err) {
-            console.error("Document fetch error:", err);
-        }
-    };
+          <h1 className="text-2xl font-semibold mb-6">
+            Customer Cabinet
+          </h1>
 
-    useEffect(() => {
-        fetchDocuments();
-    }, [currentFolder]);
+          {/* -------- Breadcrumb -------- */}
+          <div className="flex justify-between mb-4 text-sm text-gray-600">
+            <div>
+              <span
+                className="cursor-pointer text-blue-600"
+                onClick={() => {
+                  setBreadcrumb([]);
+                  setCurrentFolder(null);
+                }}
+              >
+                Root
+              </span>
 
-    const handleUpload = async (e) => {
-        e.preventDefault();
-
-        if (!currentFolder) {
-            alert("Select a folder first");
-            return;
-        }
-
-        if (!file) {
-            alert("Select a file");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("document_name", documentName);
-        formData.append("folder_name", currentFolder);
-
-        try {
-            setLoading(true);
-
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/documents`,
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
-
-            if (!res.ok) throw new Error();
-
-            setFile(null);
-            setDocumentName("");
-            fetchDocuments();
-        } catch {
-            alert("Upload failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-    const handleDeleteFolder = async (folderId) => {
-        if (!window.confirm("Delete this folder?")) return;
-
-        try {
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/folders/${folderId}`,
-                { method: "DELETE" }
-            );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                alert(data.error || "Delete failed");
-                return;
-            }
-
-            fetchFolders();
-        } catch (err) {
-            alert("Delete failed");
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm("Delete this document?")) return;
-
-        try {
-            const res = await fetch(
-                `${API}/customer-document/documents/${id}`,
-                { method: "DELETE" }
-            );
-
-            if (!res.ok) throw new Error();
-
-            fetchDocuments();
-        } catch {
-            alert("Delete failed");
-        }
-    };
-
-    const handleRenameFolder = async (folder) => {
-        const newName = prompt("Enter new folder name", folder.folder_name);
-
-        if (!newName || newName === folder.folder_name) return;
-
-        try {
-            const res = await fetch(
-                `${API}/customer-document/customers/${customerId}/folders/${folder._id}`,
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ new_name: newName }),
-                }
-            );
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                alert(data.error || "Rename failed");
-                return;
-            }
-
-            fetchFolders();
-
-            // If current folder was renamed → update it
-            if (currentFolder === folder.folder_name) {
-                setCurrentFolder(newName);
-            }
-
-        } catch {
-            alert("Rename failed");
-        }
-    };
-    /* ---------------- UI ---------------- */
-
-    return (
-        <div className="min-h-screen bg-gray-50">
-            <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-
-            <div className="flex">
-                <Sidebar
-                    isOpen={sidebarOpen}
-                    toggleSidebar={() => setSidebarOpen(false)}
-                />
-
-                <main className="flex-1 mt-20 sm:mt-24 lg:ml-64 p-4">
-
-                    <h1 className="text-2xl font-semibold mb-6">
-                        Customer Cabinet
-                    </h1>
-
-                    {/* ---------- FOLDER VIEW ---------- */}
-                    {!currentFolder && (
-                        <div className="bg-white p-6 rounded shadow mb-6">
-                            <h2 className="text-lg font-semibold mb-4">Folders</h2>
-
-                            <div className="flex gap-2 mb-4">
-                                <input
-                                    type="text"
-                                    value={newFolderName}
-                                    onChange={(e) => setNewFolderName(e.target.value)}
-                                    placeholder="New folder name"
-                                    className="border px-3 py-2 rounded w-full"
-                                />
-                                <button
-                                    onClick={handleCreateFolder}
-                                    className="bg-green-600 text-white px-4 rounded"
-                                >
-                                    Create
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-4 gap-4">
-                                {folders.map((folder) => (
-                                    <div
-                                        key={folder._id}
-                                        className="p-4 border rounded hover:bg-gray-100 relative group"
-                                    >
-                                        {/* Folder Click */}
-                                        <div
-                                            onClick={() => setCurrentFolder(folder.folder_name)}
-                                            className="cursor-pointer"
-                                        >
-                                            📁 {folder.folder_name}
-                                        </div>
-                                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-
-                                            <button
-                                                onClick={() => handleRenameFolder(folder)}
-                                                className="cursor-pointer text-blue-500"
-                                            >
-                                                ✎
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleDeleteFolder(folder._id)}
-                                                className="text-red-500 cursor-pointer"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ---------- DOCUMENT VIEW ---------- */}
-                    {currentFolder && (
-                        <>
-                            <div className="mb-4 flex justify-between items-center">
-
-                                <button
-                                    onClick={() => setCurrentFolder(null)}
-                                    className="font-bold cursor-pointer text-blue-600"
-                                >
-                                    ← Back
-                                </button>
-                                <div>
-                                    📂 <strong>{currentFolder}</strong>
-                                </div>
-                            </div>
-
-                            {/* Upload Box */}
-                            <div className="bg-white p-6 rounded shadow mb-6">
-                                <form onSubmit={handleUpload} className="space-y-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Document name (optional)"
-                                        value={documentName}
-                                        onChange={(e) =>
-                                            setDocumentName(e.target.value)
-                                        }
-                                        className="w-full border rounded px-3 py-2"
-                                    />
-
-                                    <input
-                                        type="file"
-                                        onChange={(e) =>
-                                            setFile(e.target.files[0])
-                                        }
-                                        className="w-full"
-                                    />
-
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded"
-                                    >
-                                        {loading
-                                            ? "Uploading..."
-                                            : "Upload Document"}
-                                    </button>
-                                </form>
-                            </div>
-
-                            {/* Documents Table */}
-                            <div className="bg-white rounded shadow">
-                                <table className="min-w-full divide-y">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left">
-                                                Name
-                                            </th>
-                                            <th className="px-4 py-2 text-left">
-                                                Type
-                                            </th>
-                                            <th className="px-4 py-2 text-left">
-                                                Size
-                                            </th>
-                                            <th className="px-4 py-2 text-left">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody>
-                                        {documents.length === 0 && (
-                                            <tr>
-                                                <td
-                                                    colSpan="4"
-                                                    className="text-center py-4 text-gray-500"
-                                                >
-                                                    No documents in this folder
-                                                </td>
-                                            </tr>
-                                        )}
-
-                                        {documents.map((doc) => (
-                                            <tr key={doc._id}>
-                                                <td className="px-4 py-2">
-                                                    {doc.document_name}
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    {doc.file_type}
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    {(doc.file_size / 1024).toFixed(2)} KB
-                                                </td>
-                                                <td className="px-4 py-2 space-x-3">
-                                                    <a
-                                                        href={`${API.replace("/api", "")}/${doc.file_path}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-blue-600"
-                                                    >
-                                                        Download
-                                                    </a>
-
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDelete(doc._id)
-                                                        }
-                                                        className="text-red-600"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </>
-                    )}
-                </main>
+              {breadcrumb.map((folder, index) => (
+                <span key={folder._id}>
+                  {" / "}
+                  <span
+                    className="cursor-pointer text-blue-600"
+                    onClick={() => {
+                      const updated = breadcrumb.slice(0, index + 1);
+                      setBreadcrumb(updated);
+                      setCurrentFolder(folder);
+                    }}
+                  >
+                    {folder.folder_name}
+                  </span>
+                </span>
+              ))}
             </div>
-        </div>
-    );
+            <div>
+              <button
+                type="button"
+                onClick={createSubFolder}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                + Folder
+              </button>
+            </div>
+          </div>
+
+          {/* -------- Folder Grid -------- */}
+          <div className="bg-white p-6 rounded shadow mb-6">
+            <h2 className="text-lg font-semibold mb-4">
+              {currentFolder
+                ? `Subfolders inside "${currentFolder.folder_name}"`
+                : "Folders"}
+            </h2>
+
+            <div className="grid grid-cols-4 gap-4">
+              {folders.map((folder) => (
+                <div
+                  key={folder._id}
+                  className="p-4 border rounded hover:bg-gray-100 relative group"
+                >
+                  <div
+                    onClick={() => {
+                      setBreadcrumb([...breadcrumb, folder]);
+                      setCurrentFolder(folder);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    📁 {folder.folder_name}
+                  </div>
+
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                    <button
+                      onClick={() => handleRenameFolder(folder)}
+                      className="text-blue-500"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFolder(folder._id)}
+                      className="text-red-500"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* -------- Documents Section -------- */}
+          {currentFolder && (
+            <>
+              <div className="bg-white p-6 rounded shadow mb-6">
+                <form onSubmit={handleUpload} className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Document name"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    className="w-full border rounded px-3 py-2"
+                  />
+
+                  <input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files[0])}
+                    className="w-full"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded"
+                  >
+                    {loading ? "Uploading..." : "Upload Document"}
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-white rounded shadow">
+                <table className="min-w-full divide-y">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Name</th>
+                      <th className="px-4 py-2 text-left">Type</th>
+                      <th className="px-4 py-2 text-left">Size</th>
+                      <th className="px-4 py-2 text-left">Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {documents.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="text-center py-4 text-gray-500">
+                          No documents in this folder
+                        </td>
+                      </tr>
+                    )}
+
+                    {documents.map((doc) => (
+                      <tr key={doc._id}>
+                        <td className="px-4 py-2">{doc.document_name}</td>
+                        <td className="px-4 py-2">{doc.file_type}</td>
+                        <td className="px-4 py-2">
+                          {(doc.file_size / 1024).toFixed(2)} KB
+                        </td>
+                        <td className="px-4 py-2 space-x-3">
+                          <a
+                            href={`${API.replace("/api", "")}/${doc.file_path}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600"
+                          >
+                            Download
+                          </a>
+
+                          <button
+                            onClick={() => handleDeleteDocument(doc._id)}
+                            className="text-red-600"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+        </main>
+      </div>
+    </div>
+  );
 };
 
 export default CustomerDocuments;

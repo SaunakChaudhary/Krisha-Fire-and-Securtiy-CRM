@@ -12,6 +12,11 @@ const customerFolderSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  parent_folder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CustomerFolder",
+    default: null,
+  },
   created_at: {
     type: Date,
     default: Date.now,
