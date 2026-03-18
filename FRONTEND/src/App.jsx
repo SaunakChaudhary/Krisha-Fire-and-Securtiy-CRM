@@ -73,6 +73,7 @@ import UserUnAuthorised from './pages/UserUnAuthorised'
 import DiaryCalendar from './pages/DiaryCalendar'
 import CustomerDocuments from './pages/CustomerDocuments'
 import Calender from './pages/Engineer/Calender'
+import SiteDocuments from './pages/SiteDocuments'
 
 const res = await fetch(`${import.meta.env.VITE_API_URL}/access-types`);
 const data1 = await res.json();
@@ -117,6 +118,8 @@ const App = () => {
         <Route path="/update-site/:siteId" element={<EditSite />} />
         <Route path="/site/:siteId/system" element={<SiteSystem />} />
         <Route path="/site-systems/:siteId/:systemId" element={<SiteSystems />} />
+        <Route path="/site/:siteId/documents" element={<SiteDocuments />} />
+
 
         {/* Add Sales Enquiry */}
         <Route path="/add-sales-enquiry" element={<AddSalesEnquiry />} />

@@ -51,6 +51,7 @@ const cabinetRoutes = require("./routes/cabinet.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const permissionRoutes = require("./routes/permission.routes");
 const customerDocumentRoutes = require("./routes/customerDocument.routes");
+const siteDocumentRoutes = require("./routes/siteDocument.routes");
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/access-types", UserAccessRouter);
@@ -75,6 +76,7 @@ app.use("/api/cabinet", cabinetRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/permissions", permissionRoutes);
 app.use("/api/customer-document", customerDocumentRoutes);
+app.use("/api/site-document", siteDocumentRoutes);
 DB()
   .then(async () => {
     await seedDefaults();

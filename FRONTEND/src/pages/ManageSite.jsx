@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { Search, MapPin, Home, User, Phone, Edit, Trash2, Eye, Plus, ChevronDown, ChevronUp, Settings, Settings2Icon } from 'lucide-react';
+import { Search, MapPin, Home, User, Phone, Edit, Trash2, Eye, Plus, ChevronDown, ChevronUp, Settings, Settings2Icon, Files } from 'lucide-react';
 import { AuthContext } from "../Context/AuthContext";
 import { Upload } from 'lucide-react';
 
@@ -339,6 +339,13 @@ const ManageSites = () => {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                             <div className="flex justify-end space-x-2">
+                                                                <Link
+                                                                    to={`/site/${site._id}/documents`}
+                                                                    className="text-blue-600 hover:text-blue-900 p-1"
+                                                                    title="Cabinet"
+                                                                >
+                                                                    <Files className="h-4 w-4" />
+                                                                </Link>
                                                                 <Link
                                                                     to={`/site/${site._id}/system?status=${site.status}`}
                                                                     className="text-blue-600 hover:text-blue-900 p-1"
