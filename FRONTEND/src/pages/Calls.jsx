@@ -93,7 +93,7 @@ const CallList = () => {
     });
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    
+
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
@@ -104,14 +104,14 @@ const CallList = () => {
     }, []);
 
     // Fetch all calls initially
-    const fetchCalls = async () => {
+    const fetchCalls = async (page = 1) => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/calls`, );
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/calls?page=${page}&limit=${pagination.limit}`,);
 
             if (!response.ok) throw new Error('Failed to fetch calls');
             const data = await response.json();
-            
+
             const formattedCalls = data.data.map(call => ({
                 id: call.call_number,
                 _id: call._id,
@@ -156,7 +156,12 @@ const CallList = () => {
 
             setOriginalCalls(formattedCalls);
             setDisplayCalls(formattedCalls);
-            updatePagination(formattedCalls);
+            setPagination(prev => ({
+                ...prev,
+                page,
+                total: data.count,
+                totalPages: Math.ceil(data.count / prev.limit)
+            }));
         } catch (error) {
             console.error('Error fetching calls:', error);
             toast.error(error.message || 'Failed to load calls');
@@ -164,7 +169,9 @@ const CallList = () => {
             setLoading(false);
         }
     };
-
+    useEffect(() => {
+        fetchCalls(pagination.page);
+    }, [pagination.page]);
     // Update pagination based on current calls
     const updatePagination = (calls) => {
         setPagination(prev => ({
@@ -258,11 +265,7 @@ const CallList = () => {
     };
 
     // Get calls for current page
-    const getPaginatedCalls = () => {
-        const start = (pagination.page - 1) * pagination.limit;
-        const end = start + pagination.limit;
-        return displayCalls.slice(start, end);
-    };
+    const getPaginatedCalls = () => displayCalls;
 
     return (
         <div className="min-h-screen flex flex-col">

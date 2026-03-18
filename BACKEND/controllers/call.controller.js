@@ -197,16 +197,11 @@ exports.getCallDetails = async (req, res) => {
 
 exports.getAllDetails = async (req, res) => {
   try {
-    // Extract query parameters
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      priority,
-      startDate,
-      endDate,
-      search,
-    } = req.query;
+    // ✅ Parse page and limit as integers
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const { status, priority, startDate, endDate, search } = req.query;
 
     // Build the query
     const query = {};
@@ -219,34 +214,32 @@ exports.getAllDetails = async (req, res) => {
       query.completedAt = { $exists: false };
     } else if (status === "completed") {
       query.completedAt = { $exists: true };
+    } else if (status && !["waiting", "active", "completed"].includes(status)) {
+      // Handle direct status field values like "open", "in_progress", "on_hold", "resolved", "closed"
+      query.status = status;
     }
 
     // Priority filter
-    if (priority) {
-      query.priority = priority;
+    if (priority !== undefined && priority !== "") {
+      query.priority = parseInt(priority, 10);
     }
 
     // Date range filter
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
+      if (endDate) {
+        // Set end date to end of day
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
     }
 
-    // Search filter
-    if (search) {
-      query.$or = [
-        { "site_id.name": { $regex: search, $options: "i" } },
-        { "site_system.name": { $regex: search, $options: "i" } },
-        { "call_type.name": { $regex: search, $options: "i" } },
-        { caller_name: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // Get total count
+    // ✅ Get total count BEFORE pagination
     const total = await Call.countDocuments(query);
 
-    // Get paginated results
+    // ✅ Get paginated results with correct integer skip and limit
     const calls = await Call.find(query)
       .populate("site_id")
       .populate("site_system")
@@ -256,12 +249,14 @@ exports.getAllDetails = async (req, res) => {
       .populate("logged_by")
       .populate("engineer_id")
       .sort({ priority: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip((page - 1) * limit) // ✅ integer math
+      .limit(limit); // ✅ integer limit
 
     res.status(200).json({
       success: true,
-      count: total,
+      count: total, // total number of matching records
+      page: page, // current page
+      totalPages: Math.ceil(total / limit), // total pages
       data: calls,
     });
   } catch (error) {
@@ -383,15 +378,14 @@ exports.editCall = async (req, res) => {
         ...(site_id !== undefined && { site: site_id }),
         ...(engineer_id !== undefined && { engineer: engineer_id }),
         ...(assign_date !== undefined && { date: assign_date }),
-
       },
-      { runValidators: true }
+      { runValidators: true },
     );
 
     const updatedCall = await Call.findByIdAndUpdate(
       id,
       { $set: updateFields },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedCall) {
