@@ -60,6 +60,7 @@ const TaskDetails = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [openDiaryId, setOpenDiaryId] = useState(null);
 
   // Refs for signature pads
   const engineerSigPadRef = useRef();
@@ -178,7 +179,11 @@ const TaskDetails = () => {
       toast.error("Failed to download document");
     }
   };
-
+  // Component ke andar, return se pehle ye function add karo
+  const getFileUrl = (filePath) => {
+    const filename = filePath.split('\\').pop().split('/').pop();
+    return `${import.meta.env.VITE_UPLOAD_URL}/uploads/${filename}`;
+  };
   const handleDeleteDocument = async (documentId) => {
     if (!window.confirm("Are you sure you want to delete this document?")) {
       return;
@@ -344,6 +349,7 @@ const TaskDetails = () => {
       fetchDocuments();
     }
   }, [taskId]);
+  const [diaryData, setDiaryData] = useState([]);
 
   useEffect(() => {
     const fetchTaskDetails = async () => {
@@ -355,6 +361,7 @@ const TaskDetails = () => {
 
         const data = await res.json();
         if (data.success) {
+          setDiaryData(data.data);
           const userTask = data.data.find(
             (entry) => entry._id.toString() === taskId.toString()
           );
@@ -413,6 +420,36 @@ const TaskDetails = () => {
     }
   }, [taskId, user]);
 
+  const [docCounts, setDocCounts] = useState({});
+  const [diaryDocs, setDiaryDocs] = useState({});
+  useEffect(() => {
+    if (!diaryData || diaryData.length === 0) return;
+
+    const fetchDocCounts = async () => {
+      const counts = {};
+      const docs = {};
+
+      await Promise.all(
+        diaryData.map(async (diary) => {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${diary._id}/documents`);
+            const data = await response.json();
+            counts[diary._id] = data.data.length;
+            docs[diary._id] = data.data;
+          } catch (err) {
+            console.error('Error for diary:', diary._id, err);
+            counts[diary._id] = 0;
+          }
+        })
+      );
+      setDocCounts(counts);
+      setDiaryDocs(docs)
+    };
+
+    fetchDocCounts();
+  }, [diaryData]);
+
+  console.log(docCounts);
 
   const [popupMessage, setPopupMessage] = useState("");
 
@@ -1636,33 +1673,110 @@ const TaskDetails = () => {
                           <th className="p-3">Call Type</th>
                           <th className="p-3">Engineer</th>
                           <th className="p-3">Caller</th>
+                          <th className="p-3">Documents</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {siteHistory.map((call, index) => (
-                          <tr
-                            key={index}
-                            className={`border-b hover:bg-gray-50 ${call._id === task.callLog?._id ? 'bg-blue-50' : ''}`}
-                          >
-                            <td className="p-3 font-medium">{call.call_number}</td>
-                            <td className="p-3">
-                              {new Date(call.logged_date).toLocaleDateString()}
-                            </td>
-                            <td className="p-3">{call.call_type?.name || 'N/A'}</td>
-                            <td className="p-3">
-                              {call.engineer_id
-                                ? `${call.engineer_id.firstname} ${call.engineer_id.lastname}`
-                                : 'Not assigned'
-                              }
-                            </td>
-                            <td className="p-3">{call.caller_name || 'N/A'}</td>
-                          </tr>
-                        ))}
+                        {siteHistory.map((call, index) => {
+                          const matchedDiary = diaryData.find(d => String(d.callLog?._id) === String(call._id));
+
+                          return (
+                            <tr
+                              key={index}
+                              className={`border-b hover:bg-gray-50 ${call._id === task.callLog?._id ? 'bg-blue-50' : ''}`}
+                            >
+                              <td className="p-3 font-medium">{call.call_number}</td>
+                              <td className="p-3">
+                                {new Date(call.logged_date).toLocaleDateString()}
+                              </td>
+                              <td className="p-3">{call.call_type?.name || 'N/A'}</td>
+                              <td className="p-3">
+                                {call.engineer_id
+                                  ? `${call.engineer_id.firstname} ${call.engineer_id.lastname}`
+                                  : 'Not assigned'
+                                }
+                              </td>
+                              <td className="p-3">{call.caller_name || 'N/A'}</td>
+                              <td className="p-3">
+                                {matchedDiary ? (
+                                  <button
+                                    onClick={() => setOpenDiaryId(matchedDiary._id)}
+                                    className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
+                                  >
+                                    📄 {docCounts[matchedDiary._id] ?? '...'} docs
+                                  </button>
+                                ) : '-'}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
                 )}
+                {openDiaryId && (
+                  <>
+                    {/* Dark overlay */}
+                    <div
+                      className="fixed inset-0 bg-black/50 z-40"
+                      onClick={() => setOpenDiaryId(null)} // bahar click karo to band ho
+                    />
 
+                    {/* Modal box — center mein */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b">
+                          <h3 className="text-base font-semibold text-gray-800">
+                            📄 Documents ({diaryDocs[openDiaryId]?.length ?? 0})
+                          </h3>
+                          <button
+                            onClick={() => setOpenDiaryId(null)}
+                            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Document list */}
+                        <div className="p-4 flex flex-col gap-3 max-h-80 overflow-y-auto">
+                          {diaryDocs[openDiaryId]?.map((doc) => (
+                            <div key={doc._id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50">
+
+                              {/* File name */}
+                              <span className="text-sm text-gray-600 truncate max-w-[200px]" title={doc.originalName}>
+                                📎 {doc.originalName}
+                              </span>
+
+                              <div className="flex gap-2 shrink-0">
+                                {/* View */}
+                                <button
+                                  onClick={() => window.open(getFileUrl(doc.path), '_blank')}
+                                  className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
+                                >
+                                  View
+                                </button>
+
+                                {/* Download */}
+                                <a
+                                  href={getFileUrl(doc.path)}
+                                  download={doc.originalName}
+                                  className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100"
+                                >
+                                  Download
+                                </a>
+                              </div>
+
+                            </div>
+                          ))}
+                        </div>
+
+                      </div>
+                    </div>
+                  </>
+                )
+                }
                 {/* Statistics */}
                 {siteHistory.length > 0 && (
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1694,12 +1808,12 @@ const TaskDetails = () => {
             )}
           </div>
         </div>
-      </main>
+      </main >
 
       <footer className="bg-white shadow-inner text-center py-3 text-gray-500 text-sm">
         © 2025 Krisha Fire & Security LLP — Engineer Dashboard
       </footer>
-    </div>
+    </div >
   );
 };
 
