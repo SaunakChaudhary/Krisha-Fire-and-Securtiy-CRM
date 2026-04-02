@@ -61,6 +61,7 @@ const TaskDetails = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [submittingReport, setSubmittingReport] = useState(false);
   const [openDiaryId, setOpenDiaryId] = useState(null);
+  const [openTaskReport, setOpenTaskReport] = useState(null);
 
   // Refs for signature pads
   const engineerSigPadRef = useRef();
@@ -127,7 +128,15 @@ const TaskDetails = () => {
       selectedFiles.forEach((file) => {
         formData.append("documents", file);
       });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/taskReport/${taskId}`
+      );
+      const reportData = await res.json();
 
+      if (!reportData.data) {
+        toast.error("Submit report first");
+        return;
+      }
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/taskReport/${taskId}/documents`,
         {
@@ -279,7 +288,8 @@ const TaskDetails = () => {
       };
 
       // Use PUT method for update if report exists, POST for create
-      const method = taskReport ? 'PUT' : 'POST';
+      // const method = taskReport ? 'PUT' : 'POST';
+      const method = taskReport ? 'PUT' : 'POST';  // Always use POST, backend will handle create vs update
       const link = taskReport ? `${import.meta.env.VITE_API_URL}/taskReport/${taskId}` : `${import.meta.env.VITE_API_URL}/taskReport`;
       const response = await fetch(link, {
         method: method,
@@ -293,7 +303,12 @@ const TaskDetails = () => {
 
       if (data.success) {
         toast.success("Report submitted successfully!");
+
         setTaskReport(data.data);
+
+        await fetchTaskReport();   // 🔥 ADD THIS LINE
+        await fetchDocuments();
+
         setViewMode(true);
       } else {
         toast.error("Failed to submit report: " + (data.message || "Unknown error"));
@@ -330,18 +345,18 @@ const TaskDetails = () => {
   };
 
   // ========== EDIT REPORT FUNCTION ==========
-  const handleEditReport = () => {
-    setViewMode(false);
-    toast.success("You can now edit the report");
-  };
+  // const handleEditReport = () => {
+  //   setViewMode(false);
+  //   toast.success("You can now edit the report");
+  // };
 
-  const toggleViewMode = () => {
-    if (viewMode) {
-      handleEditReport();
-    } else {
-      setViewMode(true);
-    }
-  };
+  // const toggleViewMode = () => {
+  //   if (viewMode) {
+  //     handleEditReport();
+  //   } else {
+  //     setViewMode(true);
+  //   }
+  // };
 
   // ========== DATA FETCHING ==========
   useEffect(() => {
@@ -350,7 +365,32 @@ const TaskDetails = () => {
     }
   }, [taskId]);
   const [diaryData, setDiaryData] = useState([]);
+  const fetchTaskReport = async () => {
+    try {
+      setReportLoading(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/taskReport/${taskId}`
+      );
 
+      const data = await res.json();
+      if (res.ok) {
+        setTaskReport(data.data);
+        if (data.data) {
+          setCustomerRating(data.data.customerRating || 0);
+          setCustomerReview(data.data.customerReview || "");
+          setChecklistStatus(data.data.checklistStatus || {});
+          setAdditionalNotes(data.data.additionalNotes || "");
+          setEngineerSignatureData(data.data.engineerSignature || null);
+          setCustomerSignatureData(data.data.customerSignature || null);
+          setViewMode(true);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching task report:", err);
+    } finally {
+      setReportLoading(false);
+    }
+  };
   useEffect(() => {
     const fetchTaskDetails = async () => {
       try {
@@ -387,33 +427,6 @@ const TaskDetails = () => {
       }
     };
 
-    const fetchTaskReport = async () => {
-      try {
-        setReportLoading(true);
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/taskReport/${taskId}`
-        );
-
-        const data = await res.json();
-        if (res.ok) {
-          setTaskReport(data.data);
-          if (data.data) {
-            setCustomerRating(data.data.customerRating || 0);
-            setCustomerReview(data.data.customerReview || "");
-            setChecklistStatus(data.data.checklistStatus || {});
-            setAdditionalNotes(data.data.additionalNotes || "");
-            setEngineerSignatureData(data.data.engineerSignature || null);
-            setCustomerSignatureData(data.data.customerSignature || null);
-            setViewMode(true);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching task report:", err);
-      } finally {
-        setReportLoading(false);
-      }
-    };
-
     if (taskId) {
       fetchTaskDetails();
       fetchTaskReport();
@@ -422,20 +435,28 @@ const TaskDetails = () => {
 
   const [docCounts, setDocCounts] = useState({});
   const [diaryDocs, setDiaryDocs] = useState({});
+  const [taskReports, setTaskReports] = useState({});
+
   useEffect(() => {
     if (!diaryData || diaryData.length === 0) return;
 
     const fetchDocCounts = async () => {
       const counts = {};
       const docs = {};
+      const TaskReport = {};
 
       await Promise.all(
         diaryData.map(async (diary) => {
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${diary._id}/documents`);
-            const data = await response.json();
-            counts[diary._id] = data.data.length;
-            docs[diary._id] = data.data;
+            const response1 = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${diary._id}/documents`);
+            const response2 = await fetch(`${import.meta.env.VITE_API_URL}/taskReport/${diary._id}`);
+
+            const data1 = await response1.json();
+            const data2 = await response2.json();
+
+            TaskReport[diary._id] = data2.data;
+            counts[diary._id] = data1.data.length;
+            docs[diary._id] = data1.data;
           } catch (err) {
             console.error('Error for diary:', diary._id, err);
             counts[diary._id] = 0;
@@ -443,13 +464,38 @@ const TaskDetails = () => {
         })
       );
       setDocCounts(counts);
-      setDiaryDocs(docs)
+      setDiaryDocs(docs);
+      setTaskReports(TaskReport);
     };
 
     fetchDocCounts();
   }, [diaryData]);
 
-  console.log(docCounts);
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star
+          key={i}
+          className={`h-4 w-4 ${i <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+        />
+      );
+    }
+    return stars;
+  };
+
+  const getSystemName = (task) => {
+    const systemId = task?.callLog?.site_system;
+    const systems = task?.site?.site_systems;
+
+    if (!systemId || !systems) return "N/A";
+
+    const matchedSystem = systems.find(
+      (sys) => sys?.system_id?._id === systemId
+    );
+
+    return matchedSystem?.system_id?.systemName || "N/A";
+  };
 
   const [popupMessage, setPopupMessage] = useState("");
 
@@ -595,7 +641,7 @@ const TaskDetails = () => {
                   {new Date(taskReport.submittedAt).toLocaleString()}
                 </span>
               </div>
-              <button
+              {/* <button
                 onClick={toggleViewMode}
                 className="flex items-center text-blue-600 hover:text-blue-800"
               >
@@ -610,7 +656,7 @@ const TaskDetails = () => {
                     View Report
                   </>
                 )}
-              </button>
+              </button> */}
             </div>
           )}
 
@@ -1266,15 +1312,13 @@ const TaskDetails = () => {
                   <h2 className="text-lg font-semibold text-gray-800">
                     Engineer Cabinet
                   </h2>
-                  {!viewMode && (
-                    <button
-                      onClick={() => setShowUploadModal(true)}
-                      className="flex items-center bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
-                    >
-                      <Upload className="h-4 w-4 mr-1" />
-                      Upload Documents
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="flex items-center bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
+                  >
+                    <Upload className="h-4 w-4 mr-1" />
+                    Upload Documents
+                  </button>
                 </div>
 
                 {documents.length === 0 ? (
@@ -1315,14 +1359,12 @@ const TaskDetails = () => {
                           >
                             Download
                           </button>
-                          {!viewMode && (
-                            <button
-                              onClick={() => handleDeleteDocument(doc._id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleDeleteDocument(doc._id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -1674,6 +1716,7 @@ const TaskDetails = () => {
                           <th className="p-3">Engineer</th>
                           <th className="p-3">Caller</th>
                           <th className="p-3">Documents</th>
+                          <th className="p-3">Task Report</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1707,6 +1750,16 @@ const TaskDetails = () => {
                                   </button>
                                 ) : '-'}
                               </td>
+                              <td>
+                                {matchedDiary ? (
+                                  <button
+                                    onClick={() => setOpenTaskReport(matchedDiary._id)}
+                                    className="flex items-center gap-1 cursor-pointer text-sm font-semibold text-blue-600 hover:underline"
+                                  >
+                                    Click Here
+                                  </button>
+                                ) : '-'}
+                              </td>
                             </tr>
                           )
                         })}
@@ -1722,7 +1775,7 @@ const TaskDetails = () => {
                       onClick={() => setOpenDiaryId(null)} // bahar click karo to band ho
                     />
 
-                    {/* Modal box — center mein */}
+                    {/* Modal box*/}
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
 
@@ -1777,6 +1830,121 @@ const TaskDetails = () => {
                   </>
                 )
                 }
+
+                {
+                  openTaskReport && (
+                    <>
+                      <div
+                        className="fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setOpenTaskReport(null)}
+                      />
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+
+                          {/* Header */}
+                          <div className="flex items-center justify-between p-4 border-b">
+                            <h3 className="text-base font-semibold text-gray-800">
+                              TaskReport
+                            </h3>
+                            <button
+                              onClick={() => setOpenTaskReport(null)}
+                              className="text-gray-400 hover:text-gray-600 text-xl cursor-pointer font-bold"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="p-4 max-h-150 overflow-y-auto">
+                            <div className="border rounded-lg p-3">
+
+                              {/* Section Title */}
+                              <h4 className="text-sm text-gray-900 font-semibold mb-3">
+                                System Name : {getSystemName(taskReports[openTaskReport]?.taskDetails)}
+                              </h4>
+                              <hr className="border-gray-300 my-3" />
+
+                              {/* Section Title */}
+                              <h4 className="text-sm text-gray-900 font-semibold mb-3">
+                                Checklist Status
+                              </h4>
+
+                              {/* Checklist Items */}
+                              <div className="flex flex-col gap-2">
+                                {
+                                  Object.keys(taskReports[openTaskReport]?.checklistStatus || {}).length > 0 ? (
+                                    Object.entries(taskReports[openTaskReport].checklistStatus).map(
+                                      ([key, value], index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-gray-50"
+                                        >
+                                          <span className="text-sm text-gray-600 leading-snug">
+                                            {key.replace(/"/g, "").trim()}
+                                          </span>
+
+                                          <span
+                                            className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${value
+                                              ? "bg-green-100 text-green-700"
+                                              : "bg-red-100 text-red-700"
+                                              }`}
+                                          >
+                                            {value ? "Yes" : "No"}
+                                          </span>
+                                        </div>
+                                      )
+                                    )
+                                  ) : (
+                                    <div className="text-sm text-gray-500 text-center py-6">
+                                      No checklist items available
+                                    </div>
+                                  )
+                                }
+                              </div>
+                              {taskReports[openTaskReport].additionalNotes != "" && (
+                                <>
+                                  <br />
+                                  <hr className="border-gray-300" />
+                                  <h4 className="text-sm mt-3 text-gray-900 font-semibold mb-3">
+                                    Additional Notes
+                                  </h4>
+                                  <div className="text-gray-800 text-sm">
+                                    {taskReports[openTaskReport].additionalNotes}
+                                  </div>
+                                </>
+                              )}
+
+                              {taskReports[openTaskReport].customerReview != "" && (
+                                <>
+                                  <br />
+                                  <hr className="border-gray-300" />
+                                  <h4 className="text-sm mt-3 text-gray-900 font-semibold mb-3">
+                                    Customer Review
+                                  </h4>
+                                  <div className="text-gray-800 text-sm">
+                                    {taskReports[openTaskReport].customerReview}
+                                  </div>
+                                </>
+                              )}
+
+                              {taskReports[openTaskReport].customerRating != "" && (
+                                <>
+                                  <br />
+                                  <hr className="border-gray-300" />
+                                  <h4 className="text-sm mt-3 text-gray-900 font-semibold mb-3">
+                                    Customer Rating
+                                  </h4>
+                                  <div className="text-gray-800 text-sm flex items-center">
+                                    {renderStars(taskReports[openTaskReport].customerRating)} &nbsp; ( {taskReports[openTaskReport].customerRating} / 5)
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )
+                }
+
                 {/* Statistics */}
                 {siteHistory.length > 0 && (
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">

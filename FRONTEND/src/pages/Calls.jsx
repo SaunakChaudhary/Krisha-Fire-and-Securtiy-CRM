@@ -107,9 +107,21 @@ const CallList = () => {
     const fetchCalls = async (page = 1) => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/calls?page=${page}&limit=${pagination.limit}`,);
 
-            if (!response.ok) throw new Error('Failed to fetch calls');
+            const queryParams = new URLSearchParams({
+                page,
+                limit: pagination.limit,
+                search: searchTerm,
+                status: filters.status,
+                priority: filters.priority,
+                startDate: filters.dateRange.start,
+                endDate: filters.dateRange.end
+            });
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/calls?${queryParams}`
+            );
+
             const data = await response.json();
 
             const formattedCalls = data.data.map(call => ({
@@ -123,7 +135,6 @@ const CallList = () => {
                 system: {
                     id: call.site_system._id,
                     name: call.site_system.name,
-                    model: call.site_system.model
                 },
                 callType: {
                     id: call.call_type._id,
@@ -133,38 +144,22 @@ const CallList = () => {
                     id: call.call_reason._id,
                     name: call.call_reason.name
                 },
-                waiting: call.waiting,
                 priority: call.priority,
-                chargable: call.chargable,
-                invoiced: call.invoiced,
                 dates: {
-                    createdAt: call.createdAt,
-                    deadline: call.deadline,
-                    completedAt: call.completedAt
-                },
-                loggedBy: {
-                    id: call.logged_by._id,
-                    name: call.logged_by.name,
-                    email: call.logged_by.email
-                },
-                engineer: call.engineer_id ? {
-                    id: call.engineer_id._id,
-                    name: call.engineer_id.name,
-                    email: call.engineer_id.email
-                } : null
+                    createdAt: call.createdAt
+                }
             }));
 
-            setOriginalCalls(formattedCalls);
             setDisplayCalls(formattedCalls);
-            setPagination(prev => ({
-                ...prev,
-                page,
+            setPagination({
+                page: data.page,
                 total: data.count,
-                totalPages: Math.ceil(data.count / prev.limit)
-            }));
+                totalPages: data.totalPages,
+                limit: pagination.limit
+            });
+
         } catch (error) {
-            console.error('Error fetching calls:', error);
-            toast.error(error.message || 'Failed to load calls');
+            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -172,7 +167,7 @@ const CallList = () => {
     useEffect(() => {
         fetchCalls(pagination.page);
     }, [pagination.page]);
-    // Update pagination based on current calls
+
     const updatePagination = (calls) => {
         setPagination(prev => ({
             ...prev,
@@ -185,11 +180,12 @@ const CallList = () => {
     const applyFilters = () => {
         let filtered = [...originalCalls];
 
-        // Apply search by site name
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
+            console.log(filtered);
             filtered = filtered.filter(call =>
-                call.site.name.toLowerCase().includes(term)
+                call.site.name.toLowerCase().includes(term) ||
+                call.id.toLowerCase().includes(term)
             );
         }
 
@@ -221,9 +217,11 @@ const CallList = () => {
 
     // Re-apply filters when search term or filters change
     useEffect(() => {
-        if (originalCalls.length > 0) {
-            applyFilters();
-        }
+        const delay = setTimeout(() => {
+            fetchCalls(1); // always reset to page 1
+        }, 300);
+
+        return () => clearTimeout(delay);
     }, [searchTerm, filters]);
 
     // Initial data fetch
@@ -549,66 +547,67 @@ const CallList = () => {
                                                     </tbody>
                                                 </table>
                                             </div>
-
-                                            {/* Pagination */}
-                                            <div className="bg-white px-3 sm:px-4 py-3 flex items-center justify-between border-t border-gray-200">
-                                                <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                                                    <div className="mb-2 sm:mb-0">
-                                                        <p className="text-xs sm:text-sm text-gray-700">
-                                                            Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
-                                                            <span className="font-medium">
-                                                                {Math.min(pagination.page * pagination.limit, pagination.total)}
-                                                            </span>{' '}
-                                                            of <span className="font-medium">{pagination.total}</span> results
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                                            <button
-                                                                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                                                                disabled={pagination.page === 1}
-                                                                className="relative inline-flex items-center px-2 py-1 sm:px-2 sm:py-2 rounded-l-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                Previous
-                                                            </button>
-                                                            {Array.from({ length: Math.min(3, pagination.totalPages) }, (_, i) => {
-                                                                let pageNum;
-                                                                if (pagination.totalPages <= 3) {
-                                                                    pageNum = i + 1;
-                                                                } else if (pagination.page <= 2) {
-                                                                    pageNum = i + 1;
-                                                                } else if (pagination.page >= pagination.totalPages - 1) {
-                                                                    pageNum = pagination.totalPages - 2 + i;
-                                                                } else {
-                                                                    pageNum = pagination.page - 1 + i;
-                                                                }
-
-                                                                return (
-                                                                    <button
-                                                                        key={pageNum}
-                                                                        onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                                                                        className={`relative inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 border text-xs sm:text-sm font-medium ${pagination.page === pageNum
-                                                                            ? 'z-10 bg-red-50 border-red-500 text-red-600'
-                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                                                            }`}
-                                                                    >
-                                                                        {pageNum}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                            <button
-                                                                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
-                                                                disabled={pagination.page === pagination.totalPages}
-                                                                className="relative inline-flex items-center px-2 py-1 sm:px-2 sm:py-2 rounded-r-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                Next
-                                                            </button>
-                                                        </nav>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </>
                                     )}
+                                    {/* Pagination */}
+                                    <div className="bg-white px-3 sm:px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="mb-2 sm:mb-0">
+                                                <p className="text-xs sm:text-sm text-gray-700">
+                                                    Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+                                                    <span className="font-medium">
+                                                        {Math.min(pagination.page * pagination.limit, pagination.total)}
+                                                    </span>{' '}
+                                                    of <span className="font-medium">{pagination.total}</span> results
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <div className="overflow-x-auto w-full">
+                                                    <nav className="flex min-w-max rounded-md shadow-sm">
+                                                        <button
+                                                            onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                                                            disabled={pagination.page === 1}
+                                                            className="relative inline-flex items-center px-2 py-1 sm:px-2 sm:py-2 rounded-l-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            Previous
+                                                        </button>
+                                                        {Array.from({ length: Math.min(3, pagination.totalPages) }, (_, i) => {
+                                                            let pageNum;
+                                                            if (pagination.totalPages <= 3) {
+                                                                pageNum = i + 1;
+                                                            } else if (pagination.page <= 2) {
+                                                                pageNum = i + 1;
+                                                            } else if (pagination.page >= pagination.totalPages - 1) {
+                                                                pageNum = pagination.totalPages - 2 + i;
+                                                            } else {
+                                                                pageNum = pagination.page - 1 + i;
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={pageNum}
+                                                                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                                                                    className={`relative inline-flex items-center px-2 py-1 sm:px-4 sm:py-2 border text-xs sm:text-sm font-medium ${pagination.page === pageNum
+                                                                        ? 'z-10 bg-red-50 border-red-500 text-red-600'
+                                                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    {pageNum}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        <button
+                                                            onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
+                                                            disabled={pagination.page === pagination.totalPages}
+                                                            className="relative inline-flex items-center px-2 py-1 sm:px-2 sm:py-2 rounded-r-md border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            Next
+                                                        </button>
+                                                    </nav>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

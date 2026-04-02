@@ -235,7 +235,16 @@ exports.getAllDetails = async (req, res) => {
         query.createdAt.$lte = end;
       }
     }
+    if (search) {
+      const regex = new RegExp(search, "i");
 
+      query.$or = [
+        { call_number: regex },
+        { status: regex },
+        { caller_name: regex },
+        { caller_number: regex },
+      ];
+    }
     // ✅ Get total count BEFORE pagination
     const total = await Call.countDocuments(query);
 
@@ -248,7 +257,7 @@ exports.getAllDetails = async (req, res) => {
       .populate("call_waiting_reason")
       .populate("logged_by")
       .populate("engineer_id")
-      .sort({ priority: -1, createdAt: -1 })
+      .sort({ call_number: -1 })
       .skip((page - 1) * limit) // ✅ integer math
       .limit(limit); // ✅ integer limit
 

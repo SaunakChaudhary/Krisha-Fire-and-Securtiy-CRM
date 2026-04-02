@@ -18,6 +18,7 @@ const ViewCalls = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [call, setCall] = useState(null);
     const [taskReports, setTaskReports] = useState([]);
+    const [editingReport, setEditingReport] = useState(null);
     const [documents, setDocuments] = useState([]);
     const [taskId, setTaskId] = useState('');
     const [status, setStatus] = useState('');
@@ -25,6 +26,8 @@ const ViewCalls = () => {
     const [taskReportsLoading, setTaskReportsLoading] = useState(false);
     const [documentsLoading, setDocumentsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('details'); // 'details', 'reports', 'documents'
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
     const { id } = useParams();
 
     // Get access type ID from user object
@@ -120,7 +123,61 @@ const ViewCalls = () => {
             setTaskReportsLoading(false);
         }
     }
+    const handleEditClick = (report) => {
+        setEditingReport({
+            ...report,
+            checklistStatus: report.checklistStatus || {}
+        });
+        setIsEditModalOpen(true);
+    };
 
+    const handleUpdateReport = async () => {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/taskReport/${taskId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        ...editingReport,
+                        taskId: taskId
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success("Report updated successfully");
+                setEditingReport(null);
+                fetchTaskReports();
+            } else {
+                toast.error("Update failed");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error updating report");
+        }
+    };
+
+    const handleChecklistChange = (key) => {
+        setEditingReport(prev => {
+            const updatedChecklist = { ...prev.checklistStatus };
+
+            if (updatedChecklist[key]) {
+                delete updatedChecklist[key];
+            } else {
+                updatedChecklist[key] = true;
+            }
+
+            return {
+                ...prev,
+                checklistStatus: updatedChecklist
+            };
+        });
+    };
     useEffect(() => {
         fetchTaskId();
         fetchCallData();
@@ -228,7 +285,7 @@ const ViewCalls = () => {
             <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
             <div className="flex">
                 <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(false)} />
-                <main className="flex-1 bg-gray-100 mt-20 sm:mt-24 p-4 lg:pl-80">
+                <main className="flex-1 bg-gray-100 mt-20 sm:mt-24 p-4 lg:pl-80 overflow-x-hidden">
                     <div className="max-w-6xl mx-auto">
                         {/* Header */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
@@ -278,7 +335,7 @@ const ViewCalls = () => {
 
                             {/* Tabs */}
                             <div className="border-b border-gray-200">
-                                <nav className="flex -mb-px">
+                                <nav className="flex -mb-px overflow-x-auto whitespace-nowrap">
                                     <button
                                         onClick={() => setActiveTab('details')}
                                         className={`py-4 px-6 text-sm font-medium border-b-2 ${activeTab === 'details'
@@ -531,8 +588,20 @@ const ViewCalls = () => {
                                         <div className="space-y-6">
                                             {taskReports.map((report, index) => (
                                                 <div key={index} className="border rounded-lg p-5 bg-gray-50">
-                                                    <h4 className="font-medium text-gray-700 mb-4 text-lg">Task Report #{index + 1}</h4>
-
+                                                    <h4 className="font-medium text-gray-700 mb-4 text-lg">Task Report #{index + 1} <button
+                                                        onClick={() => handleEditClick(report)}
+                                                        className="m-1 bg-blue-600 text-white text-sm px-2 py-0.5 rounded"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                        {editingReport?._id === report._id && (
+                                                            <button
+                                                                onClick={handleUpdateReport}
+                                                                className="m-1 bg-green-600 text-white text-sm px-2 py-0.5 rounded"
+                                                            >
+                                                                Save Changes
+                                                            </button>
+                                                        )}</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                         <div>
                                                             <p className="text-xs text-gray-500">Task Status</p>
@@ -558,19 +627,37 @@ const ViewCalls = () => {
 
                                                     <div className="mb-4">
                                                         <p className="text-xs text-gray-500">Notes</p>
-                                                        <p className="text-sm font-medium bg-white p-3 rounded border">{report.taskDetails?.notes || 'No notes provided'}</p>
+                                                        <p className="text-sm font-medium bg-white p-3 rounded border">
+                                                            {report.taskDetails?.notes || 'No notes provided'}
+                                                        </p>
                                                     </div>
 
                                                     <div className="mb-4">
                                                         <p className="text-xs text-gray-500">Additional Notes</p>
-                                                        <p className="text-sm font-medium bg-white p-3 rounded border">{report.additionalNotes || 'No additional notes'}</p>
+                                                        <p className="text-sm font-medium bg-white p-3 rounded border">
+                                                            {report.additionalNotes || 'No additional notes'}
+                                                        </p>
                                                     </div>
 
                                                     {report.checklistStatus && (
                                                         <div className="mb-4">
                                                             <p className="text-xs text-gray-500 mb-2">Checklist Status</p>
-                                                            <div className="bg-white p-3 rounded border grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                                {renderChecklistStatus(report.checklistStatus)}
+                                                            <div className="bg-white p-3 rounded border grid grid-cols-1 gap-2">
+                                                                {Object.entries(report.checklistStatus).map(([key, value]) => (
+                                                                    <div key={key} className="flex items-center">
+
+                                                                        {
+                                                                            value ? (
+                                                                                <CheckSquare className="h-4 w-4 text-green-500 mr-2" />
+                                                                            ) : (
+                                                                                <Square className="h-4 w-4 text-gray-400 mr-2" />
+                                                                            )
+                                                                        }
+
+                                                                        <span className="text-sm">{key}</span>
+                                                                    </div>
+                                                                ))}
+
                                                             </div>
                                                         </div>
                                                     )}
@@ -676,6 +763,77 @@ const ViewCalls = () => {
                             </div>
                         )}
                     </div>
+                    {isEditModalOpen && editingReport && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+                            <div className="bg-white max-h-[90vh] overflow-y-auto w-full max-w-2xl rounded-lg p-4 sm:p-6">
+
+                                {/* Header */}
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold">Edit Task Report</h2>
+                                    <button onClick={() => setIsEditModalOpen(false)}>✕</button>
+                                </div>
+
+                                {/* Checklist */}
+                                <div className="mb-6">
+                                    <h3 className="text-md font-medium mb-3">Checklist</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {call.call_type.associatedDocketTypes.map((item) => {
+                                            const key = item.name;
+
+                                            return (
+                                                <label key={key} className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingReport.checklistStatus?.[key] || false}
+                                                        onChange={() => handleChecklistChange(key)}
+                                                        className="mr-2"
+                                                    />
+                                                    <span>{key}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Additional Notes */}
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium mb-2">
+                                        Additional Notes
+                                    </label>
+                                    <textarea
+                                        value={editingReport.additionalNotes || ""}
+                                        onChange={(e) =>
+                                            setEditingReport({
+                                                ...editingReport,
+                                                additionalNotes: e.target.value
+                                            })
+                                        }
+                                        className="w-full border rounded p-2"
+                                    />
+                                </div>
+
+                                {/* Buttons */}
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        onClick={() => setIsEditModalOpen(false)}
+                                        className="px-4 py-2 border rounded"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        onClick={handleUpdateReport}
+                                        className="px-4 py-2 bg-green-600 text-white rounded"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>
