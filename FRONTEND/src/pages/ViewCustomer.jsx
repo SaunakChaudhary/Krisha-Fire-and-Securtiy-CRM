@@ -279,148 +279,150 @@ const ViewCustomer = () => {
                                         )}
                                     </div>
                                 </button>
-                                <div className={`transition-all duration-300 overflow-hidden ${expandedSections.sites ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                                    {sitesLoading ? (
-                                        <div className="p-6 flex justify-center">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
-                                        </div>
-                                    ) : sites.length === 0 ? (
-                                        <div className="p-6 text-center">
-                                            <p className="text-gray-500 mb-4">No sites found for this customer</p>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            {/* Desktop Table */}
-                                            <div className="hidden md:block overflow-x-auto">
-                                                <table className="min-w-full divide-y divide-gray-200">
-                                                    <thead className="bg-gray-50">
-                                                        <tr>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site ID</th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="bg-white divide-y divide-gray-200">
-                                                        {sites.map(site => (
-                                                            <tr key={site._id} className="hover:bg-gray-50">
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{site.site_code}</td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{site.site_name}</td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                    <div className="flex items-center">
-                                                                        <User className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.contact_name}
-                                                                    </div>
-                                                                    <div className="flex items-center mt-1">
-                                                                        <Phone className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.contact_no}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                    <div className="flex items-center">
-                                                                        <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.city}, {site.state}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${site.status === 'Live' ? 'bg-green-100 text-green-800' :
-                                                                        site.status === 'New' ? 'bg-blue-100 text-blue-800' :
-                                                                            'bg-red-100 text-red-800'
-                                                                        }`}>
-                                                                        {site.status}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                    <div className="flex justify-end space-x-2">
-                                                                        <NavLink
-                                                                            to={`/view-site/${site._id}`}
-                                                                            className="text-blue-600 hover:text-blue-900 p-1"
-                                                                            title="View"
-                                                                        >
-                                                                            <Eye className="h-4 w-4" />
-                                                                        </NavLink>
-                                                                        <NavLink
-                                                                            to={`/update-site/${site._id}`}
-                                                                            className="text-green-600 hover:text-green-900 p-1"
-                                                                            title="Edit"
-                                                                        >
-                                                                            <Edit className="h-4 w-4" />
-                                                                        </NavLink>
-                                                                    </div>
-                                                                </td>
+                                <div className={`grid transition-all duration-300 ${expandedSections.sites ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                    <div className="overflow-hidden">
+                                        {sitesLoading ? (
+                                            <div className="p-6 flex justify-center">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
+                                            </div>
+                                        ) : sites.length === 0 ? (
+                                            <div className="p-6 text-center">
+                                                <p className="text-gray-500 mb-4">No sites found for this customer</p>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                {/* Desktop Table */}
+                                                <div className="hidden md:block overflow-x-auto">
+                                                    <table className="min-w-full divide-y divide-gray-200">
+                                                        <thead className="bg-gray-50">
+                                                            <tr>
+                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site ID</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Name</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                        </thead>
+                                                        <tbody className="bg-white divide-y divide-gray-200">
+                                                            {sites.map(site => (
+                                                                <tr key={site._id} className="hover:bg-gray-50">
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{site.site_code}</td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{site.site_name}</td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                        <div className="flex items-center">
+                                                                            <User className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.contact_name}
+                                                                        </div>
+                                                                        <div className="flex items-center mt-1">
+                                                                            <Phone className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.contact_no}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                        <div className="flex items-center">
+                                                                            <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.city}, {site.state}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${site.status === 'Live' ? 'bg-green-100 text-green-800' :
+                                                                            site.status === 'New' ? 'bg-blue-100 text-blue-800' :
+                                                                                'bg-red-100 text-red-800'
+                                                                            }`}>
+                                                                            {site.status}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                        <div className="flex justify-end space-x-2">
+                                                                            <NavLink
+                                                                                to={`/view-site/${site._id}`}
+                                                                                className="text-blue-600 hover:text-blue-900 p-1"
+                                                                                title="View"
+                                                                            >
+                                                                                <Eye className="h-4 w-4" />
+                                                                            </NavLink>
+                                                                            <NavLink
+                                                                                to={`/update-site/${site._id}`}
+                                                                                className="text-green-600 hover:text-green-900 p-1"
+                                                                                title="Edit"
+                                                                            >
+                                                                                <Edit className="h-4 w-4" />
+                                                                            </NavLink>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
 
-                                            {/* Mobile Cards */}
-                                            <div className="md:hidden space-y-4">
-                                                {sites.map(site => (
-                                                    <div key={site._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                                        <div className="px-4 py-3 flex items-center justify-between">
-                                                            <div className="flex items-center">
-                                                                <Home className="text-red-600 mr-3" size={18} />
-                                                                <div>
-                                                                    <h3 className="text-sm font-medium text-gray-900">{site.site_name}</h3>
-                                                                    <p className="text-xs text-gray-500">{site.site_code}</p>
+                                                {/* Mobile Cards */}
+                                                <div className="md:hidden space-y-4">
+                                                    {sites.map(site => (
+                                                        <div key={site._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                                            <div className="px-4 py-3 flex items-center justify-between">
+                                                                <div className="flex items-center">
+                                                                    <Home className="text-red-600 mr-3" size={18} />
+                                                                    <div>
+                                                                        <h3 className="text-sm font-medium text-gray-900">{site.site_name}</h3>
+                                                                        <p className="text-xs text-gray-500">{site.site_code}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${site.status === 'Live' ? 'bg-green-100 text-green-800' :
+                                                                    site.status === 'New' ? 'bg-blue-100 text-blue-800' :
+                                                                        'bg-red-100 text-red-800'
+                                                                    }`}>
+                                                                    {site.status}
+                                                                </span>
+                                                            </div>
+                                                            <div className="p-4 border-t border-gray-200">
+                                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                                    <div>
+                                                                        <p className="text-gray-500">Contact</p>
+                                                                        <p className="font-medium flex items-center">
+                                                                            <User className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.contact_name}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-gray-500">Mobile</p>
+                                                                        <p className="font-medium flex items-center">
+                                                                            <Phone className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.contact_no}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <p className="text-gray-500">Location</p>
+                                                                        <p className="font-medium flex items-center">
+                                                                            <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                                                                            {site.city}, {site.state}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="mt-4 flex justify-end space-x-2">
+                                                                    <NavLink
+                                                                        to={`/view-site/${site._id}`}
+                                                                        className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                                                                    >
+                                                                        <Eye className="-ml-0.5 mr-1.5 h-3 w-3" />
+                                                                        View
+                                                                    </NavLink>
+                                                                    <NavLink
+                                                                        to={`/update-site/${site._id}`}
+                                                                        className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-blue-700 bg-white hover:bg-blue-50"
+                                                                    >
+                                                                        <Edit className="-ml-0.5 mr-1.5 h-3 w-3" />
+                                                                        Edit
+                                                                    </NavLink>
                                                                 </div>
                                                             </div>
-                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${site.status === 'Live' ? 'bg-green-100 text-green-800' :
-                                                                site.status === 'New' ? 'bg-blue-100 text-blue-800' :
-                                                                    'bg-red-100 text-red-800'
-                                                                }`}>
-                                                                {site.status}
-                                                            </span>
                                                         </div>
-                                                        <div className="p-4 border-t border-gray-200">
-                                                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                                                <div>
-                                                                    <p className="text-gray-500">Contact</p>
-                                                                    <p className="font-medium flex items-center">
-                                                                        <User className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.contact_name}
-                                                                    </p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-gray-500">Mobile</p>
-                                                                    <p className="font-medium flex items-center">
-                                                                        <Phone className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.contact_no}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="col-span-2">
-                                                                    <p className="text-gray-500">Location</p>
-                                                                    <p className="font-medium flex items-center">
-                                                                        <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                                                                        {site.city}, {site.state}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="mt-4 flex justify-end space-x-2">
-                                                                <NavLink
-                                                                    to={`/view-site/${site._id}`}
-                                                                    className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-                                                                >
-                                                                    <Eye className="-ml-0.5 mr-1.5 h-3 w-3" />
-                                                                    View
-                                                                </NavLink>
-                                                                <NavLink
-                                                                    to={`/update-site/${site._id}`}
-                                                                    className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-blue-700 bg-white hover:bg-blue-50"
-                                                                >
-                                                                    <Edit className="-ml-0.5 mr-1.5 h-3 w-3" />
-                                                                    Edit
-                                                                </NavLink>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
