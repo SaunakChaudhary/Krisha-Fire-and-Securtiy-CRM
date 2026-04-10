@@ -12,7 +12,6 @@ const AddQuotation = () => {
   const navigate = useNavigate();
   const [permissions, setPermissions] = useState(null);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
-
   // Get access type ID from user object (handles both structures)
   const getAccessTypeId = () => {
     if (!user) return null;
@@ -140,6 +139,9 @@ const AddQuotation = () => {
   const [productSuggestions, setProductSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
   // API call to fetch companies
   const fetchCompanies = async () => {
     try {
@@ -192,7 +194,7 @@ const AddQuotation = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/customers?company_id=${companyId}`);
       if (!response.ok) throw new Error('Failed to fetch customers');
       const data = await response.json();
-      setCustomers(data);
+      setCustomers(data.slice().sort((a, b) => a.customer_name.localeCompare(b.customer_name)));
       setLoading(prev => ({ ...prev, customers: false }));
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -489,6 +491,7 @@ const AddQuotation = () => {
       setCustomers([]);
       setSites([]);
       setSalesEnquiries([]);
+      setCustomerSearch("");
     }
   }, [formData.company_id]);
 
@@ -608,23 +611,51 @@ const AddQuotation = () => {
                     </div>
 
                     {/* Customer */}
+                    {/* Customer */}
                     <div className="col-span-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Customer*</label>
-                      <select
-                        name="customer_id"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        value={formData.customer_id}
-                        onChange={handleInputChange}
-                        required
-                        disabled={!formData.company_id || loading.customers}
-                      >
-                        <option value="">Select Customer</option>
-                        {customers.map(customer => (
-                          <option key={customer._id} value={customer._id}>
-                            {customer.customer_name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                          placeholder="Search customer..."
+                          value={customerSearch}
+                          onChange={(e) => {
+                            setCustomerSearch(e.target.value);
+                            setShowCustomerDropdown(true);
+                            if (!e.target.value) {
+                              setFormData(prev => ({ ...prev, customer_id: "" }));
+                            }
+                          }}
+                          onFocus={() => setShowCustomerDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 150)}
+                          disabled={!formData.company_id || loading.customers}
+                        />
+                        {showCustomerDropdown && formData.company_id && (
+                          <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-sm ring-1 ring-black ring-opacity-5 overflow-auto max-h-60">
+                            {customers
+                              .filter(c => c.customer_name.toLowerCase().includes(customerSearch.toLowerCase()))
+                              .map(customer => (
+                                <div
+                                  key={customer._id}
+                                  className="cursor-pointer hover:bg-gray-100 px-4 py-2"
+                                  onMouseDown={() => {
+                                    setFormData(prev => ({ ...prev, customer_id: customer._id }));
+                                    setCustomerSearch(customer.customer_name);
+                                    setShowCustomerDropdown(false);
+                                  }}
+                                >
+                                  {customer.customer_name}
+                                </div>
+                              ))}
+                            {customers.filter(c => c.customer_name.toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                              <div className="px-4 py-2 text-gray-500">No customers found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {/* Keep hidden input to maintain customer_id in formData for validation */}
+                      <input type="hidden" name="customer_id" value={formData.customer_id} />
                       {loading.customers && <p className="text-xs text-gray-500 mt-1">Loading customers...</p>}
                     </div>
 
@@ -651,12 +682,13 @@ const AddQuotation = () => {
 
                     {/* Sales Enquiry */}
                     <div className="col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sales Enquiry</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sales Enquiry*</label>
                       <select
                         name="sales_enquiry_id"
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                         value={formData.sales_enquiry_id || ""}
                         onChange={handleInputChange}
+                        required
                         disabled={!formData.site_id || loading.salesEnquiries}
                       >
                         <option value="">Select Sales Enquiry</option>
