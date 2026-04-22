@@ -44,12 +44,12 @@ const diarySchema = new mongoose.Schema(
       },
     },
     date: {
-      type: String, // YYYY-MM-DD
+      type: String,
       required: true,
       validate: {
         validator: function (value) {
           const today = new Date().toISOString().slice(0, 10);
-          return value >= today;
+          return value >= today; // this is fine, but the issue is how date is stored
         },
         message: "Date cannot be in the past",
       },
@@ -114,7 +114,7 @@ const diarySchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 diarySchema.virtual("calculatedDuration").get(function () {
@@ -168,7 +168,7 @@ diarySchema.pre("save", async function (next) {
 
     if (conflict) {
       throw new Error(
-        `Time conflict with existing assignment (${conflict.startTime}-${conflict.endTime})`
+        `Time conflict with existing assignment (${conflict.startTime}-${conflict.endTime})`,
       );
     }
   }

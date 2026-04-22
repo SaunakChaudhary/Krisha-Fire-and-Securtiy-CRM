@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from "../Context/AuthContext";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 const ViewCalls = () => {
     const { user } = useContext(AuthContext);
@@ -250,6 +252,431 @@ const ViewCalls = () => {
             console.error('Error downloading document:', error);
             toast.error('Failed to download document');
         }
+    };
+
+
+    const handleDownloadReportPDF = (report) => {
+        const pdf = new jsPDF({ unit: "mm", format: "a4" });
+        const pageW = 210;
+        const pageH = 297;
+        const margin = 14;
+        const col2 = 110;
+        let y = 0;
+
+        // ── HEADER BAND ──────────────────────────────────────────────────
+        pdf.setFillColor(30, 30, 30);
+        pdf.rect(0, 0, pageW, 32, "F");
+
+        pdf.setFillColor(220, 38, 38);
+        pdf.rect(0, 28, pageW, 4, "F");
+
+        pdf.setFontSize(17);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("KRISHA FIRE & SECURITY LLP", margin, 13);
+
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(180, 180, 180);
+        pdf.text("Fire Protection | Security Systems | AMC Services", margin, 20);
+
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(220, 38, 38);
+        pdf.text("TASK COMPLETION REPORT", pageW - margin, 13, { align: "right" });
+
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(180, 180, 180);
+        pdf.text(`Date: ${new Date().toLocaleDateString("en-IN")}`, pageW - margin, 20, { align: "right" });
+        pdf.text(`Ref: RPT-${report._id?.slice(-6).toUpperCase()}`, pageW - margin, 25, { align: "right" });
+
+        y = 42;
+
+        // ── HELPER: section header ────────────────────────────────────────
+        const sectionHeader = (title) => {
+            pdf.setFillColor(248, 249, 250);
+            pdf.rect(margin, y - 1, pageW - margin * 2, 8, "F");
+            pdf.setDrawColor(220, 38, 38);
+            pdf.setLineWidth(0.6);
+            pdf.line(margin, y - 1, margin, y + 7);
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(30, 30, 30);
+            pdf.text(title.toUpperCase(), margin + 4, y + 5);
+            pdf.setLineWidth(0.2);
+            pdf.setDrawColor(220, 220, 220);
+            y += 11;
+        };
+
+        // ── HELPER: key-value row ─────────────────────────────────────────
+        const kv = (label, value, x, currentY) => {
+            pdf.setFontSize(8);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(120, 120, 120);
+            pdf.text(label, x, currentY);
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(30, 30, 30);
+            const val = String(value || "N/A");
+            const split = pdf.splitTextToSize(val, 80);
+            pdf.text(split, x, currentY + 4.5);
+            return currentY + 4.5 + split.length * 4.5;
+        };
+
+        // ── HELPER: card box ──────────────────────────────────────────────
+        const startCard = () => {
+            pdf.setDrawColor(230, 230, 230);
+            pdf.setLineWidth(0.3);
+            return y;
+        };
+        const endCard = (startY) => {
+            pdf.roundedRect(margin, startY - 3, pageW - margin * 2, y - startY + 5, 2, 2, "S");
+            y += 6;
+        };
+
+        // ── SECTION 1: TASK INFO ──────────────────────────────────────────
+        sectionHeader("Task Information");
+        const s1 = startCard();
+        const r1left = [
+            { label: "Task Status", value: status || report.status },
+            { label: "Start Time", value: report.taskDetails?.startTime },
+        ];
+        const r1right = [
+            { label: "Task Date", value: report.taskDetails?.date ? new Date(report.taskDetails.date).toLocaleDateString("en-IN") : "N/A" },
+            { label: "End Time", value: report.taskDetails?.endTime },
+        ];
+        let leftY = y, rightY = y;
+        r1left.forEach(item => { leftY = kv(item.label, item.value, margin + 2, leftY) + 3; });
+        r1right.forEach(item => { rightY = kv(item.label, item.value, col2, rightY) + 3; });
+        y = Math.max(leftY, rightY);
+        kv("Duration", report.taskDetails?.duration, margin + 2, y);
+        y += 10;
+        endCard(s1);
+
+        // ── SECTION 2: SITE & ENGINEER ────────────────────────────────────
+        sectionHeader("Site & Engineer Details");
+        const s2 = startCard();
+        let ly2 = y, ry2 = y;
+        ly2 = kv("Site Name", call?.site_id?.site_name, margin + 2, ly2) + 3;
+        ly2 = kv("Site Code", call?.site_id?.site_code, margin + 2, ly2) + 3;
+        const addr = [
+            call?.site_id?.address_line_1,
+            call?.site_id?.address_line_2,
+            call?.site_id?.city,
+            call?.site_id?.state,
+            call?.site_id?.postcode
+        ].filter(Boolean).join(", ");
+        ly2 = kv("Address", addr, margin + 2, ly2) + 3;
+
+        ry2 = kv("Assigned Engineer", call?.engineer_id ? `${call.engineer_id.firstname} ${call.engineer_id.lastname}` : "N/A", col2, ry2) + 3;
+        ry2 = kv("Contact Person", call?.site_id?.contact_name, col2, ry2) + 3;
+        ry2 = kv("Contact Number", call?.site_id?.contact_no, col2, ry2) + 3;
+        y = Math.max(ly2, ry2) + 2;
+        endCard(s2);
+
+        // ── SECTION 3: NOTES ──────────────────────────────────────────────
+        sectionHeader("Work Notes");
+        const s3 = startCard();
+        pdf.setFontSize(8); pdf.setFont("helvetica", "normal"); pdf.setTextColor(120, 120, 120);
+        pdf.text("Task Notes", margin + 2, y);
+        y += 4.5;
+        pdf.setFontSize(9); pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 40, 40);
+        const notes = pdf.splitTextToSize(report.taskDetails?.notes || "No notes provided", pageW - margin * 2 - 8);
+        pdf.text(notes, margin + 2, y);
+        y += notes.length * 4.5 + 5;
+
+        pdf.setFontSize(8); pdf.setFont("helvetica", "normal"); pdf.setTextColor(120, 120, 120);
+        pdf.text("Additional Notes", margin + 2, y);
+        y += 4.5;
+        pdf.setFontSize(9); pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 40, 40);
+        const addNotes = pdf.splitTextToSize(report.additionalNotes || "No additional notes", pageW - margin * 2 - 8);
+        pdf.text(addNotes, margin + 2, y);
+        y += addNotes.length * 4.5 + 4;
+        endCard(s3);
+
+        // ── SECTION 4: CHECKLIST ──────────────────────────────────────────
+        if (report.checklistStatus && Object.keys(report.checklistStatus).length > 0) {
+            sectionHeader("Checklist");
+            const s4 = startCard();
+            const items = Object.entries(report.checklistStatus);
+            const half = Math.ceil(items.length / 2);
+            let cl = y, cr = y;
+            items.slice(0, half).forEach(([key, val]) => {
+                pdf.setFontSize(9); pdf.setFont("helvetica", "normal");
+                pdf.setTextColor(val ? 22 : 150, val ? 163 : 150, val ? 74 : 150);
+                pdf.text(val ? "✔" : "✘", margin + 2, cl);
+                pdf.setTextColor(40, 40, 40);
+                pdf.text(key, margin + 8, cl);
+                cl += 6;
+            });
+            items.slice(half).forEach(([key, val]) => {
+                pdf.setFontSize(9); pdf.setFont("helvetica", "normal");
+                pdf.setTextColor(val ? 22 : 150, val ? 163 : 150, val ? 74 : 150);
+                pdf.text(val ? "✔" : "✘", col2, cr);
+                pdf.setTextColor(40, 40, 40);
+                pdf.text(key, col2 + 6, cr);
+                cr += 6;
+            });
+            y = Math.max(cl, cr) + 2;
+            endCard(s4);
+        }
+
+        // ── SECTION 5: CUSTOMER FEEDBACK ─────────────────────────────────
+        sectionHeader("Customer Feedback");
+        const s5 = startCard();
+        pdf.setFontSize(8); pdf.setFont("helvetica", "normal"); pdf.setTextColor(120, 120, 120);
+        pdf.text("Rating", margin + 2, y);
+        y += 5;
+        const rating = report.customerRating || 0;
+        for (let i = 1; i <= 5; i++) {
+            pdf.setTextColor(i <= rating ? 234 : 210, i <= rating ? 179 : 210, i <= rating ? 8 : 210);
+            pdf.setFontSize(13);
+            pdf.text("★", margin + 2 + (i - 1) * 8, y);
+        }
+        pdf.setFontSize(9); pdf.setTextColor(100, 100, 100);
+        pdf.text(`${rating}/5`, margin + 46, y);
+        y += 7;
+        kv("Review", report.customerReview, margin + 2, y);
+        y += 13;
+        endCard(s5);
+
+        // ── SIGNATURES ────────────────────────────────────────────────────
+        if (report.engineerSignature || report.customerSignature) {
+            sectionHeader("Signatures");
+            const s6 = startCard();
+            if (report.engineerSignature) {
+                pdf.setFontSize(8); pdf.setTextColor(120); pdf.text("Engineer Signature", margin + 2, y);
+                y += 3;
+                try { pdf.addImage(report.engineerSignature, "PNG", margin + 2, y, 55, 22); } catch (e) { }
+                y += 26;
+            }
+            if (report.customerSignature) {
+                pdf.setFontSize(8); pdf.setTextColor(120); pdf.text("Customer Signature", col2, y - 26);
+                try { pdf.addImage(report.customerSignature, "PNG", col2, y - 23, 55, 22); } catch (e) { }
+            }
+            endCard(s6);
+        }
+
+        // ── FOOTER ────────────────────────────────────────────────────────
+        pdf.setFillColor(30, 30, 30);
+        pdf.rect(0, pageH - 14, pageW, 14, "F");
+        pdf.setFontSize(7.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(150, 150, 150);
+        pdf.text("Krisha Fire & Security LLP  |  Confidential – Internal Use Only", margin, pageH - 6);
+        pdf.setTextColor(220, 38, 38);
+        pdf.text(`Page 1 of 1`, pageW - margin, pageH - 6, { align: "right" });
+
+        pdf.save(`Task_Report_${report._id}.pdf`);
+    };
+
+
+    const handlePrintReport = (reportId) => {
+        const report = taskReports.find(r => r._id === reportId);
+        const addr = [
+            call?.site_id?.address_line_1,
+            call?.site_id?.address_line_2,
+            call?.site_id?.city,
+            call?.site_id?.state,
+            call?.site_id?.postcode
+        ].filter(Boolean).join(", ");
+
+        const engineerName = call?.engineer_id
+            ? `${call.engineer_id.firstname} ${call.engineer_id.lastname}`
+            : "Not Assigned";
+
+        const stars = (n) => Array.from({ length: 5 }, (_, i) =>
+            `<span style="color:${i < n ? '#f59e0b' : '#d1d5db'}; font-size:16px;">★</span>`
+        ).join('');
+
+        const checklist = Object.entries(report.checklistStatus || {})
+            .map(([k, v]) => `
+            <div class="check-item">
+                <span class="check-icon ${v ? 'check-yes' : 'check-no'}">${v ? '✔' : '✘'}</span>
+                <span>${k}</span>
+            </div>`)
+            .join('');
+
+        const printWindow = window.open("", "", "width=960,height=750");
+        printWindow.document.write(`
+    <html>
+    <head>
+        <title>Task Report – Krisha Fire & Security</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1f2937; font-size: 13px; }
+
+            .header {
+                background: #1a1a1a;
+                color: white;
+                padding: 20px 28px 16px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+            .header-left h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+            .header-left p { color: #9ca3af; font-size: 11px; margin-top: 3px; }
+            .header-right { text-align: right; }
+            .report-badge {
+                background: #dc2626; color: white;
+                font-size: 11px; font-weight: 700;
+                padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px;
+                display: inline-block; margin-bottom: 4px;
+            }
+            .header-right p { color: #9ca3af; font-size: 10px; margin-top: 2px; }
+            .accent-bar { height: 4px; background: #dc2626; }
+
+            .page { padding: 20px 28px; }
+
+            .section { margin-bottom: 18px; }
+            .section-title {
+                font-size: 10px; font-weight: 700; letter-spacing: 1px;
+                text-transform: uppercase; color: #dc2626;
+                border-left: 3px solid #dc2626;
+                padding: 4px 10px;
+                background: #f9fafb;
+                margin-bottom: 10px;
+            }
+            .card {
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                padding: 12px 16px;
+            }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+            .field label { font-size: 10px; color: #6b7280; font-weight: 500; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+            .field p { font-size: 13px; font-weight: 600; color: #111827; }
+
+            .notes-box {
+                background: #f9fafb; border-radius: 5px;
+                padding: 10px 14px; font-size: 13px; color: #374151;
+                line-height: 1.6; white-space: pre-wrap;
+                border: 1px solid #e5e7eb;
+            }
+
+            .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .check-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; }
+            .check-icon { font-weight: 700; font-size: 13px; width: 18px; text-align: center; }
+            .check-yes { color: #16a34a; }
+            .check-no { color: #9ca3af; }
+
+            .sig-img { max-height: 70px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; background: #fff; }
+
+            .footer {
+                background: #1a1a1a; color: #6b7280;
+                padding: 10px 28px; font-size: 10px;
+                display: flex; justify-content: space-between; align-items: center;
+                margin-top: 10px;
+            }
+            .footer span { color: #dc2626; font-weight: 600; }
+
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .no-print { display: none; }
+            }
+        </style>
+    </head>
+    <body>
+
+    <div class="header">
+        <div class="header-left">
+            <h1>KRISHA FIRE &amp; SECURITY LLP</h1>
+            <p>Fire Protection | Security Systems | AMC Services</p>
+        </div>
+        <div class="header-right">
+            <div class="report-badge">TASK REPORT</div>
+            <p>Date: ${new Date().toLocaleDateString("en-IN")}</p>
+            <p>Ref: RPT-${report._id?.slice(-6).toUpperCase()}</p>
+        </div>
+    </div>
+    <div class="accent-bar"></div>
+
+    <div class="page">
+
+        <!-- Task Info -->
+        <div class="section">
+            <div class="section-title">Task Information</div>
+            <div class="card grid-3">
+                <div class="field"><label>Status</label><p>${status || report.status || "N/A"}</p></div>
+                <div class="field"><label>Date</label><p>${report.taskDetails?.date ? new Date(report.taskDetails.date).toLocaleDateString("en-IN") : "N/A"}</p></div>
+                <div class="field"><label>Duration</label><p>${report.taskDetails?.duration || "N/A"}</p></div>
+                <div class="field"><label>Start Time</label><p>${report.taskDetails?.startTime || "N/A"}</p></div>
+                <div class="field"><label>End Time</label><p>${report.taskDetails?.endTime || "N/A"}</p></div>
+            </div>
+        </div>
+
+        <!-- Site & Engineer -->
+        <div class="section">
+            <div class="section-title">Site &amp; Engineer Details</div>
+            <div class="card grid-2">
+                <div>
+                    <div class="field" style="margin-bottom:10px"><label>Site Name</label><p>${call?.site_id?.site_name || "N/A"}</p></div>
+                    <div class="field" style="margin-bottom:10px"><label>Site Code</label><p>${call?.site_id?.site_code || "N/A"}</p></div>
+                    <div class="field"><label>Address</label><p>${addr || "N/A"}</p></div>
+                </div>
+                <div>
+                    <div class="field" style="margin-bottom:10px"><label>Assigned Engineer</label><p>${engineerName}</p></div>
+                    <div class="field" style="margin-bottom:10px"><label>Contact Person</label><p>${call?.site_id?.contact_name || "N/A"}</p></div>
+                    <div class="field"><label>Contact Number</label><p>${call?.site_id?.contact_no || "N/A"}</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="section">
+            <div class="section-title">Work Notes</div>
+            <div class="card" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <div class="field" style="margin-bottom:6px"><label>Task Notes</label></div>
+                    <div class="notes-box">${report.taskDetails?.notes || "No notes provided"}</div>
+                </div>
+                <div>
+                    <div class="field" style="margin-bottom:6px"><label>Additional Notes</label></div>
+                    <div class="notes-box">${report.additionalNotes || "No additional notes"}</div>
+                </div>
+            </div>
+        </div>
+
+        ${checklist ? `
+        <!-- Checklist -->
+        <div class="section">
+            <div class="section-title">Checklist</div>
+            <div class="card"><div class="check-grid">${checklist}</div></div>
+        </div>` : ""}
+
+        <!-- Feedback -->
+        <div class="section">
+            <div class="section-title">Customer Feedback</div>
+            <div class="card grid-2">
+                <div class="field"><label>Rating</label><div style="margin-top:4px">${stars(report.customerRating || 0)} <span style="font-size:11px;color:#6b7280;margin-left:4px">${report.customerRating || 0}/5</span></div></div>
+                <div class="field"><label>Review</label><p>${report.customerReview || "No review provided"}</p></div>
+            </div>
+        </div>
+
+        ${(report.engineerSignature || report.customerSignature) ? `
+        <!-- Signatures -->
+        <div class="section">
+            <div class="section-title">Signatures</div>
+            <div class="card grid-2">
+                ${report.engineerSignature ? `<div class="field"><label>Engineer Signature</label><br/><img src="${report.engineerSignature}" class="sig-img"/></div>` : ""}
+                ${report.customerSignature ? `<div class="field"><label>Customer Signature</label><br/><img src="${report.customerSignature}" class="sig-img"/></div>` : ""}
+            </div>
+        </div>` : ""}
+
+    </div>
+
+    <div class="footer">
+        <span>Krisha Fire &amp; Security LLP</span>
+        <span>Confidential – Internal Use Only</span>
+    </div>
+
+    <script>window.onload = () => { window.print(); }<\/script>
+    </body>
+    </html>`);
+
+        printWindow.document.close();
     };
 
     if (loading) {
@@ -587,21 +1014,37 @@ const ViewCalls = () => {
                                     ) : taskReports.length > 0 ? (
                                         <div className="space-y-6">
                                             {taskReports.map((report, index) => (
-                                                <div key={index} className="border rounded-lg p-5 bg-gray-50">
-                                                    <h4 className="font-medium text-gray-700 mb-4 text-lg">Task Report #{index + 1} <button
-                                                        onClick={() => handleEditClick(report)}
-                                                        className="m-1 bg-blue-600 text-white text-sm px-2 py-0.5 rounded"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                        {editingReport?._id === report._id && (
-                                                            <button
-                                                                onClick={handleUpdateReport}
-                                                                className="m-1 bg-green-600 text-white text-sm px-2 py-0.5 rounded"
+                                                <div
+                                                    key={index}
+                                                    id={`report-${report._id}`}
+                                                    className="border rounded-lg p-5 bg-gray-50"
+                                                >
+                                                    <h4 className="font-medium text-gray-700 mb-4 text-lg flex justify-between items-center">
+                                                        Task Report #{index + 1}
+
+                                                        <div className="flex gap-2">
+                                                            {/* <button
+                                                                onClick={() => handleDownloadReportPDF(report)}
+                                                                className="bg-red-600 text-white text-xs px-3 py-1 rounded"
                                                             >
-                                                                Save Changes
+                                                                PDF
+                                                            </button> */}
+
+                                                            <button
+                                                                onClick={() => handlePrintReport(report._id)}
+                                                                className="bg-gray-700 text-white text-xs px-3 py-1 rounded"
+                                                            >
+                                                                Print
                                                             </button>
-                                                        )}</h4>
+
+                                                            <button
+                                                                onClick={() => handleEditClick(report)}
+                                                                className="bg-blue-600 text-white text-xs px-3 py-1 rounded"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        </div>
+                                                    </h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                         <div>
                                                             <p className="text-xs text-gray-500">Task Status</p>

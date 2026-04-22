@@ -86,11 +86,41 @@ exports.addCall = async (req, res) => {
       invoice_value,
       remarks,
     });
-
     // Save to database
     const savedCall = await newCall.save();
 
-    // Return the saved call (without populating references for simplicity)
+    // Auto-create diary entry if engineer is assigned
+    if (engineer_id) {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Always use today as fallback to pass schema validation
+        let finalDate = today;
+
+        if (assign_date) {
+          const parsedDate = new Date(assign_date).toISOString().slice(0, 10);
+          finalDate = parsedDate >= today ? parsedDate : today;
+        }
+
+        const newDiaryEntry = new Diary({
+          site: site_id,
+          callLog: savedCall._id,
+          engineer: engineer_id,
+          date: finalDate,
+          startTime: "0:00",
+          endTime: "1:00",
+          duration: "1h 0m",
+          notes: "",
+          status: "scheduled",
+        });
+
+        await newDiaryEntry.save();
+      } catch (diaryError) {
+        console.warn("Auto diary entry failed:", diaryError.message);
+      }
+    }
+
+    // Return the saved call
     res.status(201).json({
       success: true,
       message: "Call successfully created",
@@ -380,16 +410,51 @@ exports.editCall = async (req, res) => {
       status: status !== undefined ? status : existingCall.status,
       updated_at: new Date(), // Always update the timestamp
     };
+    // Auto sync diary entry when call is edited
+    if (engineer_id) {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
 
-    await Diary.findOneAndUpdate(
-      { callLog: id },
-      {
-        ...(site_id !== undefined && { site: site_id }),
-        ...(engineer_id !== undefined && { engineer: engineer_id }),
-        ...(assign_date !== undefined && { date: assign_date }),
-      },
-      { runValidators: true },
-    );
+        // Get the assign_date or fallback to today
+        let finalDate = today;
+        if (assign_date) {
+          const parsedDate = new Date(assign_date).toISOString().slice(0, 10);
+          finalDate = parsedDate >= today ? parsedDate : today;
+        }
+
+        // Check if diary entry already exists for this call
+        const existingDiary = await Diary.findOne({ callLog: id });
+
+        if (existingDiary) {
+          // Update only fields that have changed — don't touch startTime/endTime
+          // (user may have already set a proper time)
+          await Diary.findOneAndUpdate(
+            { callLog: id },
+            {
+              ...(site_id !== undefined && { site: site_id }),
+              ...(engineer_id !== undefined && { engineer: engineer_id }),
+            },
+            { runValidators: false }, // skip date-in-past validation on update
+          );
+        } else {
+          // No diary entry exists — create one with default 0:00-1:00
+          const newDiaryEntry = new Diary({
+            site: site_id || existingCall.site_id,
+            callLog: id,
+            engineer: engineer_id,
+            date: finalDate,
+            startTime: "0:00",
+            endTime: "1:00",
+            duration: "1h 0m",
+            notes: "",
+            status: "scheduled",
+          });
+          await newDiaryEntry.save();
+        }
+      } catch (diaryError) {
+        console.warn("Diary sync failed on edit:", diaryError.message);
+      }
+    }
 
     const updatedCall = await Call.findByIdAndUpdate(
       id,

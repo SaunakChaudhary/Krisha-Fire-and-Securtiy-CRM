@@ -592,6 +592,16 @@ const Diary = () => {
       return;
     }
 
+    if (call_no) {
+      const callAlreadyAssigned = assignments.some(
+        a => String(a.callLog?.call_number) === String(call_no)
+      );
+      if (callAlreadyAssigned) {
+        showNotification("This call already has a diary entry. Click on the existing slot to edit it.", "info");
+        return;
+      }
+    }
+
     // Check if this is the first assignment and engineer_id is specified
     if (!hasInitialAssignment && engineerId !== engineer_id) {
       showNotification("First assignment must be for the specified engineer", "error");

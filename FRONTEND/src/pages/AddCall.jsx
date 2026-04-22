@@ -403,8 +403,21 @@ const AddCall = () => {
             );
 
             toast.success('Call created successfully!');
-            navigate(`/manage-diary/${formData.engineer_id}/${response.data.call_number}?site=${response.data.site_id}`);
+            // In handleSubmit, change the navigate line to:
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const diaryDate = formData.assign_date
+                ? new Date(formData.assign_date).toISOString().slice(0, 10)
+                : todayStr;
+            const finalDiaryDate = diaryDate >= todayStr ? diaryDate : todayStr;
 
+            if (formData.engineer_id) {
+                const todayStr = new Date().toISOString().slice(0, 10);
+                navigate(
+                    `/manage-diary/${formData.engineer_id}/${response.data.call_number}?site=${response.data.site_id}&date=${todayStr}`
+                );
+            } else {
+                navigate('/calls');
+            }
         } catch (error) {
             console.error('Error creating call:', error);
             toast.error(error.message || 'Failed to create call');

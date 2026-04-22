@@ -94,6 +94,8 @@ const EngineerReport = () => {
     const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
     const [pdfDataUrl, setPdfDataUrl] = useState('');
 
+    const [detailedPreviewOpen, setDetailedPreviewOpen] = useState(false);
+    const [selectedEngineerReport, setSelectedEngineerReport] = useState(null);
 
     // Fetch diary entries and task reports
     useEffect(() => {
@@ -493,6 +495,198 @@ const EngineerReport = () => {
         setPdfDataUrl('');
     };
 
+    const openDetailedPreview = (report) => {
+        setSelectedEngineerReport(report);
+        setDetailedPreviewOpen(true);
+    };
+
+    const closeDetailedPreview = () => {
+        setSelectedEngineerReport(null);
+        setDetailedPreviewOpen(false);
+    };
+
+    const printDetailedReport = () => {
+        const report = selectedEngineerReport;
+        if (!report) return;
+
+        const addr = [
+            report.site?.address_line_1,
+            report.site?.address_line_2,
+            report.site?.city,
+            report.site?.state,
+            report.site?.postcode
+        ].filter(Boolean).join(', ');
+
+        const engineerName = report.engineer
+            ? `${report.engineer.firstname} ${report.engineer.lastname}`
+            : 'Not Assigned';
+
+        const stars = (n) => Array.from({ length: 5 }, (_, i) =>
+            `<span style="color:${i < n ? '#f59e0b' : '#e5e7eb'}; font-size:16px;">★</span>`
+        ).join('');
+
+        const checklist = report.checklistStatus
+            ? Object.entries(report.checklistStatus).map(([k, v]) => `
+            <div class="check-item">
+                <span class="${v ? 'check-yes' : 'check-no'}">${v ? '✔' : '✘'}</span>
+                <span>${k}</span>
+            </div>`).join('')
+            : '';
+
+        const printWindow = window.open('', '', 'width=960,height=750');
+        printWindow.document.write(`
+    <html>
+    <head>
+        <title>Task Report – ${engineerName}</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1f2937; font-size: 13px; }
+
+            .header { background: #111827; color: white; padding: 20px 28px 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .header-left h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+            .header-left p { color: #9ca3af; font-size: 11px; margin-top: 3px; }
+            .header-right { text-align: right; }
+            .report-badge { background: #dc2626; color: white; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; display: inline-block; margin-bottom: 4px; }
+            .header-right p { color: #9ca3af; font-size: 10px; margin-top: 2px; }
+            .accent-bar { height: 4px; background: #dc2626; }
+
+            .page { padding: 20px 28px; }
+
+            .section { margin-bottom: 16px; }
+            .section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #dc2626; border-left: 3px solid #dc2626; padding: 4px 10px; background: #f9fafb; margin-bottom: 10px; }
+            .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 16px; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+            .field label { font-size: 10px; color: #6b7280; font-weight: 500; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+            .field p { font-size: 13px; font-weight: 600; color: #111827; }
+
+            .status-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+            .status-completed { background: #dcfce7; color: #166534; }
+            .status-scheduled { background: #dbeafe; color: #1e40af; }
+            .status-accepted { background: #fef9c3; color: #854d0e; }
+            .status-on-route { background: #ffedd5; color: #9a3412; }
+            .status-on-site { background: #f3e8ff; color: #6b21a8; }
+            .status-default { background: #f3f4f6; color: #374151; }
+
+            .notes-box { background: #f9fafb; border-radius: 5px; padding: 10px 14px; font-size: 13px; color: #374151; line-height: 1.6; white-space: pre-wrap; border: 1px solid #e5e7eb; min-height: 48px; }
+
+            .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .check-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; }
+            .check-yes { color: #16a34a; font-weight: 700; font-size: 13px; width: 16px; }
+            .check-no { color: #d1d5db; font-weight: 700; font-size: 13px; width: 16px; }
+
+            .sig-img { max-height: 70px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; background: #fff; }
+
+            .footer { background: #111827; color: #6b7280; padding: 10px 28px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+            .footer span.brand { color: #dc2626; font-weight: 600; }
+
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+        </style>
+    </head>
+    <body>
+
+    <div class="header">
+        <div class="header-left">
+            <h1>KRISHA FIRE &amp; SECURITY LLP</h1>
+            <p>Fire Protection | Security Systems | AMC Services</p>
+        </div>
+        <div class="header-right">
+            <div class="report-badge">TASK REPORT</div>
+            <p>Date: ${new Date().toLocaleDateString('en-IN')}</p>
+            <p>Ref: RPT-${report._id?.slice(-6).toUpperCase()}</p>
+        </div>
+    </div>
+    <div class="accent-bar"></div>
+
+    <div class="page">
+
+        <div class="section">
+            <div class="section-title">Task Information</div>
+            <div class="card grid-3">
+                <div class="field"><label>Status</label>
+                    <p><span class="status-badge status-${report.status?.replace('-', '') || 'default'}">${report.status?.charAt(0).toUpperCase() + report.status?.slice(1) || 'N/A'}</span></p>
+                </div>
+                <div class="field"><label>Date</label><p>${report.date ? new Date(report.date).toLocaleDateString('en-IN') : 'N/A'}</p></div>
+                <div class="field"><label>Duration</label><p>${report.duration || 'N/A'}</p></div>
+                <div class="field"><label>Start Time</label><p>${report.startTime || 'N/A'}</p></div>
+                <div class="field"><label>End Time</label><p>${report.endTime || 'N/A'}</p></div>
+                <div class="field"><label>Call Ref</label><p>${report.callLog ? '#' + report.callLog.call_number : 'N/A'}</p></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Site &amp; Engineer Details</div>
+            <div class="card grid-2">
+                <div>
+                    <div class="field" style="margin-bottom:10px"><label>Site Name</label><p>${report.site?.site_name || 'N/A'}</p></div>
+                    <div class="field" style="margin-bottom:10px"><label>Site Code</label><p>${report.site?.site_code || 'N/A'}</p></div>
+                    <div class="field"><label>Address</label><p>${addr || 'N/A'}</p></div>
+                </div>
+                <div>
+                    <div class="field" style="margin-bottom:10px"><label>Assigned Engineer</label><p>${engineerName}</p></div>
+                    <div class="field" style="margin-bottom:10px"><label>Contact Person</label><p>${report.site?.contact_name || 'N/A'}</p></div>
+                    <div class="field"><label>Contact Number</label><p>${report.site?.contact_no || 'N/A'}</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Work Notes</div>
+            <div class="card grid-2">
+                <div>
+                    <div class="field" style="margin-bottom:6px"><label>Task Notes</label></div>
+                    <div class="notes-box">${report.notes || 'No notes provided'}</div>
+                </div>
+                <div>
+                    <div class="field" style="margin-bottom:6px"><label>Additional Notes</label></div>
+                    <div class="notes-box">${report.additionalNotes || 'No additional notes'}</div>
+                </div>
+            </div>
+        </div>
+
+        ${checklist ? `
+        <div class="section">
+            <div class="section-title">Checklist</div>
+            <div class="card"><div class="check-grid">${checklist}</div></div>
+        </div>` : ''}
+
+        <div class="section">
+            <div class="section-title">Customer Feedback</div>
+            <div class="card grid-2">
+                <div class="field">
+                    <label>Rating</label>
+                    <div style="margin-top:4px">${stars(report.customerRating || 0)}
+                        <span style="font-size:11px;color:#6b7280;margin-left:4px">${report.customerRating || 0}/5</span>
+                    </div>
+                </div>
+                <div class="field"><label>Review</label><p>${report.customerReview || 'No review provided'}</p></div>
+            </div>
+        </div>
+
+        ${(report.engineerSignature || report.customerSignature) ? `
+        <div class="section">
+            <div class="section-title">Signatures</div>
+            <div class="card grid-2">
+                ${report.engineerSignature ? `<div class="field"><label>Engineer Signature</label><br/><img src="${report.engineerSignature}" class="sig-img"/></div>` : ''}
+                ${report.customerSignature ? `<div class="field"><label>Customer Signature</label><br/><img src="${report.customerSignature}" class="sig-img"/></div>` : ''}
+            </div>
+        </div>` : ''}
+
+    </div>
+
+    <div class="footer">
+        <span class="brand">Krisha Fire &amp; Security LLP</span>
+        <span>Confidential – Internal Use Only</span>
+    </div>
+
+    <script>window.onload = () => { window.print(); }<\/script>
+    </body>
+    </html>`);
+        printWindow.document.close();
+    };
     const exportToExcel = () => {
         // Main worksheet with detailed data matching your PDF format
         const mainData = filteredReports.map(report => ({
@@ -890,11 +1084,15 @@ const EngineerReport = () => {
                                             )}
 
                                             <div className="mt-4 flex justify-end space-x-3">
-                                                <button className="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                                                    View Details
-                                                </button>
-                                                <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
-                                                    Edit
+                                                <button
+                                                    onClick={() => openDetailedPreview(report)}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-medium hover:bg-indigo-100 transition-colors"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    Preview Report
                                                 </button>
                                             </div>
                                         </div>
@@ -925,6 +1123,9 @@ const EngineerReport = () => {
                                         </th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Rating
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Actions
                                         </th>
                                     </tr>
                                 </thead>
@@ -1018,6 +1219,18 @@ const EngineerReport = () => {
                                                     ) : (
                                                         <span className="text-sm text-gray-400">Not rated</span>
                                                     )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => openDetailedPreview(report)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-medium hover:bg-indigo-100 transition-colors"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        Preview
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))
@@ -1160,6 +1373,206 @@ const EngineerReport = () => {
                                         title="PDF Preview"
                                         type="application/pdf"
                                     />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Detailed Engineer Task Report Preview Modal */}
+                    {detailedPreviewOpen && selectedEngineerReport && (
+                        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+
+                                {/* Modal Header */}
+                                <div className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
+                                    <div>
+                                        <div className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-0.5">Task Report Preview</div>
+                                        <div className="font-bold text-base">
+                                            {selectedEngineerReport.engineer
+                                                ? `${selectedEngineerReport.engineer.firstname} ${selectedEngineerReport.engineer.lastname}`
+                                                : 'Unknown Engineer'}
+                                        </div>
+                                        <div className="text-xs text-gray-400 mt-0.5">
+                                            {selectedEngineerReport.site?.site_name} &nbsp;·&nbsp; {new Date(selectedEngineerReport.date).toLocaleDateString('en-IN')}
+                                        </div>
+                                    </div>
+                                    <button onClick={closeDetailedPreview} className="text-gray-400 hover:text-white transition-colors p-1 rounded">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="h-1 bg-red-600 flex-shrink-0" />
+
+                                {/* Scrollable Body */}
+                                <div className="overflow-y-auto flex-1 p-6 space-y-5 bg-gray-50">
+
+                                    {/* Task Info */}
+                                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Task Information</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            {[
+                                                { label: 'Status', value: <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(selectedEngineerReport.status)}`}>{selectedEngineerReport.status?.charAt(0).toUpperCase() + selectedEngineerReport.status?.slice(1)}</span> },
+                                                { label: 'Date', value: new Date(selectedEngineerReport.date).toLocaleDateString('en-IN') },
+                                                { label: 'Duration', value: formatDuration(selectedEngineerReport.duration) },
+                                                { label: 'Start Time', value: selectedEngineerReport.startTime || 'N/A' },
+                                                { label: 'End Time', value: selectedEngineerReport.endTime || 'N/A' },
+                                                { label: 'Call Ref', value: selectedEngineerReport.callLog ? `#${selectedEngineerReport.callLog.call_number}` : 'N/A' },
+                                            ].map(({ label, value }) => (
+                                                <div key={label}>
+                                                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+                                                    <div className="text-sm font-semibold text-gray-800">{value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Site & Engineer */}
+                                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Site & Engineer Details</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-3">
+                                                {[
+                                                    { label: 'Site Name', value: selectedEngineerReport.site?.site_name },
+                                                    { label: 'Site Code', value: selectedEngineerReport.site?.site_code },
+                                                    { label: 'Address', value: [selectedEngineerReport.site?.address_line_1, selectedEngineerReport.site?.address_line_2, selectedEngineerReport.site?.city, selectedEngineerReport.site?.state].filter(Boolean).join(', ') },
+                                                ].map(({ label, value }) => (
+                                                    <div key={label}>
+                                                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
+                                                        <div className="text-sm font-semibold text-gray-800">{value || 'N/A'}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="space-y-3">
+                                                {[
+                                                    { label: 'Assigned Engineer', value: selectedEngineerReport.engineer ? `${selectedEngineerReport.engineer.firstname} ${selectedEngineerReport.engineer.lastname}` : 'N/A' },
+                                                    { label: 'Contact Person', value: selectedEngineerReport.site?.contact_name },
+                                                    { label: 'Contact Number', value: selectedEngineerReport.site?.contact_no },
+                                                ].map(({ label, value }) => (
+                                                    <div key={label}>
+                                                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
+                                                        <div className="text-sm font-semibold text-gray-800">{value || 'N/A'}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Notes */}
+                                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Work Notes</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Task Notes</div>
+                                                <div className="bg-gray-50 rounded-md border border-gray-200 p-3 text-sm text-gray-700 min-h-[60px]">
+                                                    {selectedEngineerReport.notes || 'No notes provided'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Additional Notes</div>
+                                                <div className="bg-gray-50 rounded-md border border-gray-200 p-3 text-sm text-gray-700 min-h-[60px]">
+                                                    {selectedEngineerReport.additionalNotes || 'No additional notes'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Checklist */}
+                                    {selectedEngineerReport.checklistStatus && Object.keys(selectedEngineerReport.checklistStatus).length > 0 && (
+                                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                            <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                                <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Checklist</span>
+                                            </div>
+                                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {Object.entries(selectedEngineerReport.checklistStatus).map(([key, val]) => (
+                                                    <div key={key} className="flex items-center gap-2 text-sm">
+                                                        <span className={`text-base font-bold ${val ? 'text-green-500' : 'text-gray-300'}`}>{val ? '✔' : '✘'}</span>
+                                                        <span className="text-gray-700">{key}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Customer Feedback */}
+                                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Customer Feedback</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Rating</div>
+                                                <div className="flex items-center gap-1">
+                                                    {[1, 2, 3, 4, 5].map(i => (
+                                                        <svg key={i} className={`w-5 h-5 ${i <= (selectedEngineerReport.customerRating || 0) ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                    ))}
+                                                    <span className="text-xs text-gray-400 ml-1">{selectedEngineerReport.customerRating || 0}/5</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Review</div>
+                                                <div className="text-sm font-semibold text-gray-800">{selectedEngineerReport.customerReview || 'No review provided'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Signatures */}
+                                    {(selectedEngineerReport.engineerSignature || selectedEngineerReport.customerSignature) && (
+                                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                            <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                                                <div className="w-1 h-4 bg-red-500 rounded-full" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Signatures</span>
+                                            </div>
+                                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {selectedEngineerReport.engineerSignature && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Engineer Signature</div>
+                                                        <img src={selectedEngineerReport.engineerSignature} alt="Engineer Signature" className="border rounded max-h-24 object-contain bg-white p-2" />
+                                                    </div>
+                                                )}
+                                                {selectedEngineerReport.customerSignature && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Customer Signature</div>
+                                                        <img src={selectedEngineerReport.customerSignature} alt="Customer Signature" className="border rounded max-h-24 object-contain bg-white p-2" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                </div>
+
+                                {/* Modal Footer */}
+                                {/* Modal Footer */}
+                                <div className="border-t border-gray-200 px-6 py-3 bg-white flex justify-between items-center flex-shrink-0">
+                                    <span className="text-xs text-gray-400">Krisha Fire & Security LLP · Confidential</span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={printDetailedReport}
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                            </svg>
+                                            Print
+                                        </button>
+                                        <button onClick={closeDetailedPreview} className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
+                                            Close
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
