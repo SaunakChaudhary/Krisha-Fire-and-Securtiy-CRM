@@ -408,7 +408,20 @@ const EditCall = () => {
             );
 
             toast.success('Call updated successfully!');
-            navigate('/calls'); // Redirect to calls list after success
+
+            if (formData.engineer_id) {
+                const todayStr = new Date().toISOString().slice(0, 10);
+
+                // Use diaryDate from backend response if available, else today
+                const diaryDate = response.diaryDate || todayStr;
+                const engineerId = response.engineerId || formData.engineer_id;
+
+                navigate(
+                    `/manage-diary/${engineerId}/${formData.call_number}?site=${formData.site_id}&date=${diaryDate}`
+                );
+            } else {
+                navigate('/calls');
+            }
 
         } catch (error) {
             console.error('Error updating call:', error);

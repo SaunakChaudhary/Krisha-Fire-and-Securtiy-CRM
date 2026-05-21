@@ -312,49 +312,22 @@ exports.editCall = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      site_id,
-      site_system,
-      call_type,
-      call_reason,
-      waiting,
-      call_waiting_reason,
-      chargable,
-      invoiced,
-      bill_on_maintenance,
-      priority,
-      deadline,
-      logged_by,
-      caller_name,
-      caller_number,
-      caller_email,
-      next_action,
-      engineer_id,
-      assign_date,
-      invoice_no,
-      invoice_date,
-      invoice_value,
-      remarks,
-      status,
+      site_id, site_system, call_type, call_reason, waiting,
+      call_waiting_reason, chargable, invoiced, bill_on_maintenance,
+      priority, deadline, logged_by, caller_name, caller_number,
+      caller_email, next_action, engineer_id, assign_date,
+      invoice_no, invoice_date, invoice_value, remarks, status,
     } = req.body;
 
-    // Basic validation for required fields
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Call ID is required",
-      });
+      return res.status(400).json({ success: false, message: "Call ID is required" });
     }
 
-    // Find the existing call
     const existingCall = await Call.findById(id);
     if (!existingCall) {
-      return res.status(404).json({
-        success: false,
-        message: "Call not found",
-      });
+      return res.status(404).json({ success: false, message: "Call not found" });
     }
 
-    // Validate that waiting reason is provided if waiting is true
     if (waiting && !call_waiting_reason) {
       return res.status(400).json({
         success: false,
@@ -363,91 +336,77 @@ exports.editCall = async (req, res) => {
     }
 
     const updateFields = {
-      site_id: site_id !== undefined ? site_id : existingCall.site_id,
-      site_system:
-        site_system !== undefined ? site_system : existingCall.site_system,
-      call_type: call_type !== undefined ? call_type : existingCall.call_type,
-      call_reason:
-        call_reason !== undefined ? call_reason : existingCall.call_reason,
-      waiting: waiting !== undefined ? waiting : existingCall.waiting,
-      call_waiting_reason: waiting
-        ? call_waiting_reason !== undefined
-          ? call_waiting_reason
-          : existingCall.call_waiting_reason
-        : undefined,
-      chargable: chargable !== undefined ? chargable : existingCall.chargable,
-      invoiced: invoiced !== undefined ? invoiced : existingCall.invoiced,
-      bill_on_maintenance:
-        bill_on_maintenance !== undefined
-          ? bill_on_maintenance
-          : existingCall.bill_on_maintenance,
-      priority: priority !== undefined ? priority : existingCall.priority,
-      deadline: deadline !== undefined ? deadline : existingCall.deadline,
-      logged_by: logged_by !== undefined ? logged_by : existingCall.logged_by,
-      caller_name:
-        caller_name !== undefined ? caller_name : existingCall.caller_name,
-      caller_number:
-        caller_number !== undefined
-          ? caller_number
-          : existingCall.caller_number,
-      caller_email:
-        caller_email !== undefined ? caller_email : existingCall.caller_email,
-      next_action:
-        next_action !== undefined ? next_action : existingCall.next_action,
-      engineer_id:
-        engineer_id !== undefined ? engineer_id : existingCall.engineer_id,
-      assign_date:
-        assign_date !== undefined ? assign_date : existingCall.assign_date,
-      invoice_no:
-        invoice_no !== undefined ? invoice_no : existingCall.invoice_no,
-      invoice_date:
-        invoice_date !== undefined ? invoice_date : existingCall.invoice_date,
-      invoice_value:
-        invoice_value !== undefined
-          ? invoice_value
-          : existingCall.invoice_value,
-      remarks: remarks !== undefined ? remarks : existingCall.remarks,
-      status: status !== undefined ? status : existingCall.status,
-      updated_at: new Date(), // Always update the timestamp
+      site_id:              site_id              !== undefined ? site_id              : existingCall.site_id,
+      site_system:          site_system          !== undefined ? site_system          : existingCall.site_system,
+      call_type:            call_type            !== undefined ? call_type            : existingCall.call_type,
+      call_reason:          call_reason          !== undefined ? call_reason          : existingCall.call_reason,
+      waiting:              waiting              !== undefined ? waiting              : existingCall.waiting,
+      call_waiting_reason:  waiting ? (call_waiting_reason !== undefined ? call_waiting_reason : existingCall.call_waiting_reason) : undefined,
+      chargable:            chargable            !== undefined ? chargable            : existingCall.chargable,
+      invoiced:             invoiced             !== undefined ? invoiced             : existingCall.invoiced,
+      bill_on_maintenance:  bill_on_maintenance  !== undefined ? bill_on_maintenance  : existingCall.bill_on_maintenance,
+      priority:             priority             !== undefined ? priority             : existingCall.priority,
+      deadline:             deadline             !== undefined ? deadline             : existingCall.deadline,
+      logged_by:            logged_by            !== undefined ? logged_by            : existingCall.logged_by,
+      caller_name:          caller_name          !== undefined ? caller_name          : existingCall.caller_name,
+      caller_number:        caller_number        !== undefined ? caller_number        : existingCall.caller_number,
+      caller_email:         caller_email         !== undefined ? caller_email         : existingCall.caller_email,
+      next_action:          next_action          !== undefined ? next_action          : existingCall.next_action,
+      engineer_id:          engineer_id          !== undefined ? engineer_id          : existingCall.engineer_id,
+      assign_date:          assign_date          !== undefined ? assign_date          : existingCall.assign_date,
+      invoice_no:           invoice_no           !== undefined ? invoice_no           : existingCall.invoice_no,
+      invoice_date:         invoice_date         !== undefined ? invoice_date         : existingCall.invoice_date,
+      invoice_value:        invoice_value        !== undefined ? invoice_value        : existingCall.invoice_value,
+      remarks:              remarks              !== undefined ? remarks              : existingCall.remarks,
+      status:               status               !== undefined ? status               : existingCall.status,
+      updated_at: new Date(),
     };
-    // Auto sync diary entry when call is edited
+
+    // ✅ Update the call first
+    const updatedCall = await Call.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCall) {
+      return res.status(404).json({ success: false, message: "Call not found after update attempt" });
+    }
+
+    // ✅ Sync diary entry AFTER call is saved
+    let finalDate = null;
     if (engineer_id) {
       try {
-        const today = new Date().toISOString().slice(0, 10);
+        // ✅ Use assign_date as-is (can be past), fallback to today
+        finalDate = assign_date
+          ? new Date(assign_date).toISOString().slice(0, 10)
+          : new Date().toISOString().slice(0, 10);
 
-        // Get the assign_date or fallback to today
-        let finalDate = today;
-        if (assign_date) {
-          const parsedDate = new Date(assign_date).toISOString().slice(0, 10);
-          finalDate = parsedDate >= today ? parsedDate : today;
-        }
-
-        // Check if diary entry already exists for this call
         const existingDiary = await Diary.findOne({ callLog: id });
 
         if (existingDiary) {
-          // Update only fields that have changed — don't touch startTime/endTime
-          // (user may have already set a proper time)
+          // ✅ Update site, engineer AND date when assign_date changes
           await Diary.findOneAndUpdate(
             { callLog: id },
             {
-              ...(site_id !== undefined && { site: site_id }),
+              ...(site_id    !== undefined && { site: site_id }),
               ...(engineer_id !== undefined && { engineer: engineer_id }),
+              date: finalDate, // ✅ always sync the date
             },
-            { runValidators: false }, // skip date-in-past validation on update
+            { runValidators: false }
           );
         } else {
-          // No diary entry exists — create one with default 0:00-1:00
+          // No diary entry yet — create one
           const newDiaryEntry = new Diary({
-            site: site_id || existingCall.site_id,
-            callLog: id,
-            engineer: engineer_id,
-            date: finalDate,
+            site:      site_id || existingCall.site_id,
+            callLog:   id,
+            engineer:  engineer_id,
+            date:      finalDate,
             startTime: "0:00",
-            endTime: "1:00",
-            duration: "1h 0m",
-            notes: "",
-            status: "scheduled",
+            endTime:   "1:00",
+            duration:  "1h 0m",
+            notes:     "",
+            status:    "scheduled",
           });
           await newDiaryEntry.save();
         }
@@ -456,50 +415,24 @@ exports.editCall = async (req, res) => {
       }
     }
 
-    const updatedCall = await Call.findByIdAndUpdate(
-      id,
-      { $set: updateFields },
-      { new: true, runValidators: true },
-    );
-
-    if (!updatedCall) {
-      return res.status(404).json({
-        success: false,
-        message: "Call not found after update attempt",
-      });
-    }
-
-    // Return the updated call
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Call successfully updated",
       data: updatedCall,
+      diaryDate: finalDate,       // ✅ sent to frontend for navigation
+      engineerId: engineer_id,
     });
+
   } catch (error) {
     console.error("Error updating call:", error);
 
-    // Handle specific errors
     if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
-        error: error.message,
-      });
+      return res.status(400).json({ success: false, message: "Validation error", error: error.message });
     }
-
     if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid ID format",
-        error: error.message,
-      });
+      return res.status(400).json({ success: false, message: "Invalid ID format", error: error.message });
     }
 
-    // Generic error handler
-    res.status(500).json({
-      success: false,
-      message: "Failed to update call",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to update call", error: error.message });
   }
 };

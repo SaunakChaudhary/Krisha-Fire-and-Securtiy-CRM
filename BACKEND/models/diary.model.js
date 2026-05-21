@@ -46,13 +46,6 @@ const diarySchema = new mongoose.Schema(
     date: {
       type: String,
       required: true,
-      validate: {
-        validator: function (value) {
-          const today = new Date().toISOString().slice(0, 10);
-          return value >= today; // this is fine, but the issue is how date is stored
-        },
-        message: "Date cannot be in the past",
-      },
     },
     startTime: {
       type: String,
